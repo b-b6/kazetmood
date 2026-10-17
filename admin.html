@@ -1,0 +1,1827 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KAZETMOOD — Админ-панель управления магазином</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0c0d0b;
+  --cream:#f5f3ee;
+  --amber:#c98a3b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0c0a;color:#f4f2ed;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+.adm-top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 28px;background:#121310;border-bottom:1px solid #ffffff14;flex-wrap:wrap;position:sticky;top:0;z-index:50}
+.adm-brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:15px;letter-spacing:.06em}
+.logo-mark{width:34px;height:34px;border-radius:10px;background:var(--amber);color:#fff;display:grid;place-items:center;font:600 17px/1 'Playfair Display',serif}
+.adm-brand span.badge-adm{background:#ffffff14;color:var(--amber);border:1px solid #c98a3b55;font-size:10px;padding:4px 8px;border-radius:6px;letter-spacing:.1em;text-transform:uppercase;margin-left:6px}
+.adm-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.adm-tabs button{padding:10px 16px;border-radius:10px;font:600 12px/1 Inter;color:#ffffffa8;background:#ffffff08;border:1px solid transparent;transition:.2s;display:flex;align-items:center;gap:7px}
+.adm-tabs button:hover{color:#fff;background:#ffffff12}
+.adm-tabs button.on{background:#f4f2ed;color:#0c0d0b}
+.adm-tabs .cnt{padding:2px 6px;border-radius:99px;font-size:10px;background:#ffffff1f;color:inherit}
+.adm-tabs button.on .cnt{background:#0c0d0b1f;color:#0c0d0b}
+.adm-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.adm-btn{padding:10px 15px;border-radius:10px;font:600 12px/1 Inter;background:#ffffff12;color:#fff;border:1px solid #ffffff1f;transition:.2s;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.adm-btn:hover{background:#ffffff22}
+.adm-btn.gold{background:var(--amber);border-color:var(--amber);color:#fff}
+.adm-btn.gold:hover{filter:brightness(1.08)}
+.adm-btn.danger{background:#e5393522;border-color:#e5393555;color:#ff8a80}
+.adm-btn.danger:hover{background:#e53935;color:#fff}
+
+.adm-body{flex:1;padding:28px;max-width:1380px;width:100%;margin:0 auto}
+.adm-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px}
+.adm-stat{background:#151613;border:1px solid #ffffff12;border-radius:16px;padding:18px 20px}
+.adm-stat small{display:block;color:#ffffff7a;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.adm-stat b{font:600 26px/1.1 'Playfair Display',serif;color:#fff}
+.adm-stat span{display:block;font-size:11px;color:var(--amber);margin-top:6px}
+
+.adm-panel{display:none}
+.adm-panel.on{display:block}
+
+.adm-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;background:#151613;padding:14px 18px;border-radius:14px;border:1px solid #ffffff12}
+.adm-search{flex:1;min-width:220px;background:#0c0d0b;border:1px solid #ffffff1f;border-radius:10px;padding:10px 14px;color:#fff;font:13px Inter;outline:none}
+.adm-search:focus{border-color:var(--amber)}
+.adm-select{background:#0c0d0b;border:1px solid #ffffff1f;border-radius:10px;padding:10px 14px;color:#fff;font:13px Inter;outline:none}
+
+.adm-table-wrap{background:#151613;border:1px solid #ffffff12;border-radius:16px;overflow:hidden}
+.adm-row{display:grid;grid-template-columns:44px 72px 1.35fr 1.55fr 125px 120px 225px;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #ffffff0d;transition:background .15s,transform .15s}
+.adm-row:hover{background:#ffffff05}
+.adm-row.head{background:#1b1c18;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#ffffff75;font-weight:600;padding:11px 16px}
+.adm-row.is-hidden{opacity:.48}
+
+/* Перетаскивание товаров (Drag & Drop) */
+.adm-drag-handle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:grab;color:#ffffff66;user-select:none;padding:6px 2px;border-radius:6px;transition:all .18s}
+.adm-drag-handle:hover{color:var(--amber);background:#ffffff0f}
+.adm-drag-handle:active{cursor:grabbing}
+.adm-drag-handle .grip-icon{font-size:16px;line-height:1;letter-spacing:-2px;color:var(--amber);opacity:.85}
+.adm-drag-handle .row-num{font:700 10px/1 Inter;color:#ffffff75}
+
+.adm-row[draggable="true"]{position:relative}
+.adm-row.dragging{opacity:.35;background:#c98a3b1f !important;outline:2px dashed var(--amber);outline-offset:-2px}
+.adm-row.drag-over-top{border-top:3px solid var(--amber) !important;background:#c98a3b0d}
+.adm-row.drag-over-bottom{border-bottom:3px solid var(--amber) !important;background:#c98a3b0d}
+.adm-thumb{width:64px;height:80px;border-radius:8px;overflow:hidden;background:#222;position:relative;cursor:pointer;border:1px solid #ffffff1a}
+.adm-thumb img{width:100%;height:100%;object-fit:cover;object-position:center top}
+.adm-thumb .adm-photo-pill{position:absolute;bottom:4px;right:4px;background:#0c0d0be6;color:#f5c27a;font:700 9px/1 Inter;padding:3px 6px;border-radius:99px;border:1px solid rgba(245,194,122,.45);pointer-events:none}
+.adm-thumb .ov{position:absolute;inset:0;background:#000000a6;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;text-align:center;padding:2px}
+.adm-thumb:hover .ov{opacity:1}
+
+/* Галерея фото в форме и в модалке */
+.adm-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;margin-top:10px}
+.adm-photo-card{position:relative;aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid #ffffff1f;background:#0c0d0b}
+.adm-photo-card img{width:100%;height:100%;object-fit:cover;object-position:center top}
+.adm-photo-card .cover-badge{position:absolute;top:4px;left:4px;background:#f5c27a;color:#0c0d0b;font:700 8.5px/1 Inter;padding:3px 6px;border-radius:99px}
+.adm-photo-card .actions{position:absolute;bottom:0;left:0;right:0;background:#000000d4;display:flex;justify-content:space-between;padding:4px}
+.adm-photo-card .actions button{background:transparent;border:0;color:#fff;font-size:11px;cursor:pointer;padding:2px 4px}
+.adm-photo-card .actions button:hover{color:#f5c27a}
+.adm-photo-card.add-box{display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed #ffffff29;cursor:pointer;color:#ffffff88;font-size:11px;gap:4px;transition:.2s}
+.adm-photo-card.add-box:hover{border-color:var(--amber);color:#fff;background:#ffffff0a}
+.adm-inp{width:100%;background:#0c0d0b;border:1px solid #ffffff18;border-radius:8px;padding:8px 10px;color:#fff;font:13px Inter;outline:none;transition:.15s}
+.adm-inp:focus{border-color:var(--amber);background:#000}
+.adm-price-wrap{position:relative;display:flex;align-items:center}
+.adm-price-wrap input{padding-right:38px;font-weight:600;color:#f5c27a}
+.adm-price-wrap em{position:absolute;right:10px;font-style:normal;font-size:11px;color:#ffffff66;pointer-events:none}
+.adm-row-btns{display:flex;align-items:center;gap:5px;justify-content:flex-end;flex-wrap:wrap}
+.adm-ic{width:32px;height:32px;border-radius:8px;background:#ffffff0d;border:1px solid #ffffff14;color:#ffffffcc;display:grid;place-items:center;font-size:13px;cursor:pointer;transition:.15s}
+.adm-ic:hover{background:#ffffff22;color:#fff}
+.adm-ic.gold{background:#c98a3b26;border-color:#c98a3b66;color:#f5c27a}
+.adm-ic.gold:hover{background:var(--amber);color:#fff}
+.adm-ic.del:hover{background:#e53935;border-color:#e53935;color:#fff}
+
+/* Модальное окно генератора Stories 9:16 и Ценника (#17) */
+.adm-modal{position:fixed;inset:0;z-index:180;background:#000000cc;backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:18px}
+.adm-modal.on{display:flex}
+.adm-modal-box{background:#151613;border:1px solid #ffffff1f;border-radius:20px;padding:24px;max-width:520px;width:100%;max-height:92vh;overflow-y:auto;text-align:center;position:relative}
+.adm-modal-box canvas{width:100%;max-width:300px;border-radius:14px;border:1px solid #ffffff22;margin:12px auto;display:block;box-shadow:0 16px 40px #000}
+
+.adm-form-grid{display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start}
+.adm-card{background:#151613;border:1px solid #ffffff12;border-radius:18px;padding:22px}
+.adm-card h3{font:600 18px/1.2 'Playfair Display',serif;margin-bottom:16px;color:#fff}
+.adm-drop{aspect-ratio:3/4;border:2px dashed #ffffff29;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;cursor:pointer;position:relative;overflow:hidden;background:#0c0d0b;transition:.2s}
+.adm-drop:hover{border-color:var(--amber);background:#12130f}
+.adm-drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top}
+.adm-drop .ov{position:relative;z-index:2;background:#0c0d0bcc;backdrop-filter:blur(8px);padding:12px 16px;border-radius:10px;border:1px solid #ffffff1f;font-size:12px;color:#ffffffd9}
+.adm-field{margin-bottom:15px}
+.adm-field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#ffffff85;margin-bottom:6px;font-weight:600}
+.adm-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+.adm-orders{display:grid;gap:14px}
+.adm-order{background:#151613;border:1px solid #ffffff14;border-radius:16px;padding:18px 20px;display:grid;grid-template-columns:1.2fr 2fr 1fr auto;gap:18px;align-items:center}
+.adm-order-status{padding:5px 10px;border-radius:99px;font-size:11px;font-weight:600;display:inline-block}
+.adm-order-status.new{background:#c98a3b29;color:#f5b968;border:1px solid #c98a3b66}
+.adm-order-status.done{background:#2e7d3229;color:#81c784;border:1px solid #2e7d3266}
+
+/* Стили аналитики и графика продаж */
+.an-chart-wrap{display:flex;align-items:flex-end;gap:14px;height:220px;padding:20px 10px 0;border-bottom:1px solid #ffffff1f;overflow-x:auto}
+.an-bar-col{flex:1;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
+.an-bar-val{font:700 10.5px/1 Inter;color:var(--amber);white-space:nowrap}
+.an-bar-fill{width:100%;max-width:42px;background:linear-gradient(180deg,#f5c27a 0%,#c98a3b 60%,#784d18 100%);border-radius:8px 8px 0 0;transition:height .45s ease;position:relative;min-height:6px;box-shadow:0 4px 16px rgba(201,138,59,.25)}
+.an-bar-fill:hover{background:linear-gradient(180deg,#fff 0%,#f5c27a 100%);box-shadow:0 0 16px rgba(245,194,122,.6)}
+.an-bar-label{font:600 10px/1 Inter;color:#ffffff99;white-space:nowrap;margin-top:2px}
+.an-cat-row{display:flex;flex-direction:column;gap:6px}
+.an-cat-head{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600}
+.an-cat-track{width:100%;height:9px;background:#ffffff14;border-radius:99px;overflow:hidden}
+.an-cat-prog{height:100%;border-radius:99px;transition:width .5s ease}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,130%);background:#f5f3ee;color:#0c0d0b;padding:12px 20px;border-radius:99px;font:600 12px/1 Inter;z-index:200;transition:transform .35s cubic-bezier(.16,1,.3,1);box-shadow:0 12px 32px #00000066}
+.toast.on{transform:translate(-50%,0)}
+
+@media(max-width:960px){
+  .adm-row{grid-template-columns:1fr;gap:8px;padding:14px}
+  .adm-row.head{display:none}
+  .adm-form-grid,.adm-order,.adm-grid-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="adm-top">
+  <div class="adm-brand">
+    <span class="logo-mark">K</span>
+    <div>KAZETMOOD <span class="badge-adm">ОТДЕЛЬНАЯ АДМИН-ПАНЕЛЬ</span></div>
+  </div>
+  <div class="adm-tabs" id="admTabs">
+    <button class="on" data-tab="catalog">📦 Каталог товаров <span class="cnt" id="admProdCount">0</span></button>
+    <button data-tab="add">➕ Добавить товар</button>
+    <button data-tab="orders">🛍 Заказы <span class="cnt" id="admOrderCount">0</span></button>
+    <button data-tab="analytics">📈 Аналитика & Продажи</button>
+    <button data-tab="settings">⚙ Настройки & Telegram-бот</button>
+  </div>
+  <div class="adm-actions">
+    <button class="adm-btn gold" id="admSaveDataJs" title="Сохранить все изменения напрямую в файл базы data.js">💾 Сохранить в базу (data.js)</button>
+    <a class="adm-btn" href="index.html" target="_blank">↗ Открыть витрину сайта</a>
+  </div>
+</header>
+
+<div class="adm-body">
+  <!-- Верхняя статистика -->
+  <div class="adm-stats">
+    <div class="adm-stat">
+      <small>Всего товаров на витрине</small>
+      <b id="stTotalProds">0</b>
+      <span id="stCatsInfo">4 категории активны</span>
+    </div>
+    <div class="adm-stat">
+      <small>Средняя цена товара</small>
+      <b id="stAvgPrice">0 сом</b>
+      <span>В национальной валюте (КР)</span>
+    </div>
+    <div class="adm-stat">
+      <small>Заказы клиентов</small>
+      <b id="stOrdersCount">0</b>
+      <span id="stNewOrders">Новых: 0</span>
+    </div>
+    <div class="adm-stat">
+      <small>Сумма заказов</small>
+      <b id="stOrdersSum">0 сом</b>
+      <span>Общий оборот в базе</span>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 1: КАТАЛОГ ТОВАРОВ -->
+  <div class="adm-panel on" id="panel-catalog">
+    <div class="adm-toolbar">
+      <input class="adm-search" id="admSearch" placeholder="🔍 Поиск по названию или цене (например: Loro Piana, Moncler, жилетка)...">
+      <select class="adm-select" id="admCatFilter">
+        <option value="all">Все категории</option>
+        <option value="top">Костюмы & Бомберы / Верх</option>
+        <option value="bottom">Джинсы & Брюки</option>
+        <option value="shoes">Обувь</option>
+      </select>
+      <button class="adm-btn gold" onclick="switchAdmTab('add')">+ Новый товар</button>
+    </div>
+
+    <div class="adm-table-wrap">
+      <div class="adm-row head">
+        <div title="Зажмите и перетащите товар вверх или вниз">↕ №</div>
+        <div>Фото</div>
+        <div>Название товара</div>
+        <div>Описание & Ссылка на видео (TikTok/Reels)</div>
+        <div>Категория</div>
+        <div>Цена (сом)</div>
+        <div style="text-align:right">Stories / Ценник / Действия</div>
+      </div>
+      <div id="admProdList"></div>
+    </div>
+    <input type="file" id="admReplacePhotoInput" accept="image/*" style="display:none">
+  </div>
+
+  <!-- ВКЛАДКА 2: ДОБАВИТЬ НОВЫЙ ТОВАР -->
+  <div class="adm-panel" id="panel-add">
+    <div class="adm-form-grid">
+      <div class="adm-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3 style="margin:0">Фотографии товара (3:4)</h3>
+          <span class="badge-adm" id="admNewPhotosCount">1 фото</span>
+        </div>
+        <p style="font-size:12px;color:#ffffff75;margin:0 0 12px">
+          Выберите сразу несколько фото с телефона/компьютера — на сайте появится удобный свайп!
+        </p>
+        <label class="adm-drop" id="admDropZone" for="admNewPhotoFile" style="height:210px;aspect-ratio:auto">
+          <img id="admPreviewImg" src="assets/products/tt_1.jpg" alt="">
+          <div class="ov">📷 Нажмите, чтобы выбрать фото (можно выбрать сразу несколько!)</div>
+        </label>
+        <input type="file" id="admNewPhotoFile" accept="image/*" multiple style="display:none">
+
+        <!-- Миниатюры загруженных фото -->
+        <div style="margin-top:14px">
+          <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#ffffff85;margin-bottom:8px;font-weight:600">Все фото товара (первое — обложка):</label>
+          <div id="admNewPhotosList" class="adm-photo-grid"></div>
+        </div>
+
+        <div class="adm-field" style="margin-top:14px;margin-bottom:0">
+          <label>Или добавить фото по ссылке / пути</label>
+          <div style="display:flex;gap:6px">
+            <input class="adm-inp" id="admNewPhotoUrl" placeholder="assets/products/... или https://...">
+            <button class="adm-btn" id="admAddPhotoUrlBtn" type="button" style="white-space:nowrap">+ Добавить</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-card">
+        <h3>Данные нового товара</h3>
+        <div class="adm-grid-2">
+          <div class="adm-field">
+            <label>Название товара *</label>
+            <input class="adm-inp" id="admNewName" placeholder="Например: Бомбер Loro Piana · Чёрный">
+          </div>
+          <div class="adm-field">
+            <label>Цена в сомах *</label>
+            <input class="adm-inp" id="admNewPrice" type="number" placeholder="2500" value="2500">
+          </div>
+        </div>
+
+        <div class="adm-grid-2">
+          <div class="adm-field">
+            <label>Категория на сайте *</label>
+            <select class="adm-select" id="admNewCat" style="width:100%">
+              <option value="top">Костюмы & Бомберы (Верх)</option>
+              <option value="bottom">Джинсы & Брюки</option>
+              <option value="shoes">Обувь</option>
+            </select>
+          </div>
+          <div class="adm-field">
+            <label>Позиция в витрине</label>
+            <select class="adm-select" id="admNewPos" style="width:100%">
+              <option value="first">Поставить первым (Хит / Новинка)</option>
+              <option value="last">Добавить в конец списка</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="adm-field">
+          <label>Описание / Размеры / Материал</label>
+          <input class="adm-inp" id="admNewSub" placeholder="Например: TikTok Хит · Размеры M–2XL / Премиум качество">
+        </div>
+
+        <div class="adm-field">
+          <label>🎬 Ссылка на видео этой вещи в TikTok или Instagram Reels (необязательно)</label>
+          <input class="adm-inp" id="admNewVideo" placeholder="Например: https://vt.tiktok.com/... или https://www.instagram.com/reel/...">
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:22px">
+          <button class="adm-btn gold" id="admSaveNewBtn" style="padding:13px 24px;font-size:13px">✓ Добавить товар на сайт</button>
+          <button class="adm-btn" onclick="switchAdmTab('catalog')">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 3: ЗАКАЗЫ КЛИЕНТОВ -->
+  <div class="adm-panel" id="panel-orders">
+    <div class="adm-toolbar">
+      <div>
+        <strong style="font-size:15px">Входящие заявки и заказы с сайта</strong>
+        <div style="font-size:12px;color:#ffffff7a;margin-top:2px">Заказы из корзины на сайте автоматически сохраняются здесь и приходят в ваш Telegram-бот</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="adm-btn gold" id="admExportCsvBtn">📥 Выгрузить базу в Excel (CSV)</button>
+        <button class="adm-btn" id="admCopyPhonesBtn">📋 Номера для WhatsApp</button>
+        <button class="adm-btn" id="admAddTestOrder">+ Тестовый заказ</button>
+        <button class="adm-btn danger" id="admClearOrders">Очистить историю</button>
+      </div>
+    </div>
+    <div class="adm-orders" id="admOrdersList"></div>
+  </div>
+
+  <!-- ВКЛАДКА 4: АНАЛИТИКА, ГРАФИКИ И БАЗА КЛИЕНТОВ -->
+  <div class="adm-panel" id="panel-analytics">
+    <div class="adm-toolbar">
+      <div>
+        <strong style="font-size:15px">📊 Аналитика продаж и клиентская база</strong>
+        <div style="font-size:12px;color:#ffffff7a;margin-top:2px">Динамика выручки, графики по дням и готовая база номеров для рассылок в WhatsApp</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="adm-btn gold" onclick="document.getElementById('admExportCsvBtn').click()">📥 Скачать базу клиентов (Excel / CSV)</button>
+        <button class="adm-btn" onclick="document.getElementById('admCopyPhonesBtn').click()">📋 Скопировать номера для WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- Показатели продаж -->
+    <div class="adm-stats" style="margin-bottom:18px">
+      <div class="adm-stat">
+        <small>Общая выручка</small>
+        <b id="anTotalRevenue" style="color:var(--amber)">0 сом</b>
+        <span id="anCompletedRevenue">0 сом выполнено</span>
+      </div>
+      <div class="adm-stat">
+        <small>Всего заказов</small>
+        <b id="anTotalOrdersCount">0 шт.</b>
+        <span id="anOrdersSplit">0 новых / 0 выполнено</span>
+      </div>
+      <div class="adm-stat">
+        <small>Средний чек</small>
+        <b id="anAverageCheck">0 сом</b>
+        <span>На один заказ</span>
+      </div>
+      <div class="adm-stat">
+        <small>База клиентов</small>
+        <b id="anUniqueClientsCount">0 чел.</b>
+        <span>Уникальных номеров</span>
+      </div>
+    </div>
+
+    <!-- График по дням и доли категорий -->
+    <div class="adm-grid-2" style="margin-bottom:18px">
+      <div class="adm-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0">📈 Динамика продаж по дням</h3>
+          <span style="font-size:11px;color:var(--muted)">Сумма заказов в сомах</span>
+        </div>
+        <div class="an-chart-wrap" id="anDailyChart"></div>
+      </div>
+
+      <div class="adm-card">
+        <h3 style="margin-bottom:14px">🏷 Популярность категорий витрины</h3>
+        <div id="anCategoryBars" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+    </div>
+
+    <!-- Таблица уникальных покупателей для WhatsApp -->
+    <div class="adm-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0">👥 База покупателей (повторные продажи и рассылки)</h3>
+          <div style="font-size:12px;color:#ffffff75;margin-top:2px">Нажмите «Написать в WhatsApp», чтобы в 1 клик предложить клиенту новинку под его размер</div>
+        </div>
+        <button class="adm-btn gold" onclick="document.getElementById('admExportCsvBtn').click()">📥 Скачать таблицу Excel</button>
+      </div>
+      <div class="adm-table-wrap">
+        <div class="adm-row head" style="grid-template-columns:1.2fr 1.3fr .9fr 1.1fr 1.6fr">
+          <div>Имя клиента</div>
+          <div>Телефон / WhatsApp</div>
+          <div>Заказов</div>
+          <div>Сумма (сом)</div>
+          <div>Последняя покупка</div>
+        </div>
+        <div id="anClientsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 4: НАСТРОЙКИ МАГАЗИНА И TELEGRAM-БОТ -->
+  <div class="adm-panel" id="panel-settings">
+    <div class="adm-grid-2">
+      <div class="adm-card">
+        <h3>Контакты и витрина магазина</h3>
+        <div class="adm-field">
+          <label>Телефон / WhatsApp магазина (для звонков и заказов)</label>
+          <input class="adm-inp" id="cfgPhone" placeholder="+996 700 000 000">
+        </div>
+        <div class="adm-grid-2">
+          <div class="adm-field">
+            <label>Город / Район</label>
+            <input class="adm-inp" id="cfgArea" placeholder="Манас">
+          </div>
+          <div class="adm-field">
+            <label>Адрес / Рынок</label>
+            <input class="adm-inp" id="cfgAddress" placeholder="Шабдалы базар">
+          </div>
+        </div>
+        <div class="adm-field">
+          <label>Поиск точки на Google Карте</label>
+          <input class="adm-inp" id="cfgMap" placeholder="Шабдалы базар, Манас, Кыргызстан">
+        </div>
+        <div class="adm-grid-2">
+          <div class="adm-field">
+            <label>Открытие (час, 0–23)</label>
+            <input class="adm-inp" id="cfgOpen" type="number" min="0" max="23">
+          </div>
+          <div class="adm-field">
+            <label>Закрытие (час, 0–23)</label>
+            <input class="adm-inp" id="cfgClose" type="number" min="0" max="24">
+          </div>
+        </div>
+        <div class="adm-field" style="margin-top:6px">
+          <label>⚡ Живые уведомления «Сейчас смотрят / Заказали» на сайте</label>
+          <select class="adm-select" id="cfgLiveToast" style="width:100%">
+            <option value="true">Включены (показывать активность покупателям)</option>
+            <option value="false">Выключены</option>
+          </select>
+        </div>
+        <button class="adm-btn gold" id="cfgSaveBtn" style="margin-top:8px;padding:12px 20px">💾 Сохранить все настройки</button>
+      </div>
+
+      <div style="display:grid;gap:18px">
+        <div class="adm-card">
+          <h3>📲 Уведомления о заказах в Telegram за 1 секунду (#16)</h3>
+          <p style="font-size:12px;color:#ffffff8c;line-height:1.5;margin-bottom:14px">
+            Когда клиент оформляет заказ на сайте, бот мгновенно пришлёт вам карточку заказа с именем, телефоном, размерами и кнопкой связи в WhatsApp.
+          </p>
+          <div class="adm-field">
+            <label>Telegram Bot Token (от @BotFather)</label>
+            <input class="adm-inp" id="cfgTgToken" placeholder="Например: 7123456789:AAH_xYz...">
+          </div>
+          <div class="adm-field">
+            <label>Ваш Telegram Chat ID (от @userinfobot)</label>
+            <input class="adm-inp" id="cfgTgChat" placeholder="Например: 482910384">
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="adm-btn gold" id="cfgSaveTgBtn">💾 Сохранить Telegram</button>
+            <button class="adm-btn" id="cfgTestTgBtn">🚀 Проверить уведомление</button>
+          </div>
+        </div>
+
+        <div class="adm-card">
+          <h3>Синхронизация с главным сайтом (index.html)</h3>
+          <div style="display:grid;gap:10px">
+            <button class="adm-btn gold" onclick="document.getElementById('admSaveDataJs').click()" style="justify-content:center;padding:13px">💾 Сохранить изменения в файл data.js</button>
+            <button class="adm-btn" id="admOptimizeStorageBtn" style="justify-content:center;padding:11px;background:#1b433233;border-color:#2e7d3288;color:#a3e635">⚡ Очистить и оптимизировать память фото</button>
+            <button class="adm-btn" id="admExportJson" style="justify-content:center;padding:11px">📋 Скопировать JSON товаров</button>
+            <button class="adm-btn danger" id="admResetDefault" style="justify-content:center;padding:11px">↺ Сбросить товары к исходному списку</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно предпросмотра Stories (9:16) -->
+<div class="adm-modal" id="storyModal">
+  <div class="adm-modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong style="font-size:15px">📱 Готовый шаблон для Stories / TikTok (9:16)</strong>
+      <button class="adm-ic" onclick="document.getElementById('storyModal').classList.remove('on')">✕</button>
+    </div>
+    <canvas id="storyCanvas" width="1080" height="1920"></canvas>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+      <button class="adm-btn gold" id="downloadStoryBtn" style="padding:12px 22px">⬇ Скачать картинку PNG (1080×1920)</button>
+      <button class="adm-btn" onclick="document.getElementById('storyModal').classList.remove('on')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно управления всеми фото товара (Галерея) -->
+<div class="adm-modal" id="galleryModal">
+  <div class="adm-modal-box" style="max-width:660px;text-align:left">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <strong style="font-size:16px" id="galModalTitle">📷 Фотографии товара</strong>
+        <div style="font-size:12px;color:#ffffff75;margin-top:2px">Добавляйте несколько ракурсов модели, меняйте порядок и выбирайте главное фото для витрины</div>
+      </div>
+      <button class="adm-ic" onclick="closeGalleryModal()">✕</button>
+    </div>
+
+    <!-- Список всех фото модели -->
+    <div id="galModalGrid" class="adm-photo-grid" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;max-height:360px;overflow-y:auto;padding:4px"></div>
+
+    <div style="background:#0c0d0b;border:1px solid #ffffff14;border-radius:12px;padding:14px;margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <strong style="font-size:13px">➕ Загрузить новые фото к этой вещи:</strong>
+        <label class="adm-btn gold" style="cursor:pointer;padding:8px 14px;font-size:12px" for="galModalFileInput">
+          📁 Выбрать файлы (можно несколько)
+        </label>
+        <input type="file" id="galModalFileInput" accept="image/*" multiple style="display:none">
+      </div>
+      <div style="display:flex;gap:6px">
+        <input class="adm-inp" id="galModalUrlInp" placeholder="Или вставьте ссылку / путь к фото и нажмите Добавить...">
+        <button class="adm-btn" id="galModalAddUrlBtn" type="button" style="white-space:nowrap">+ Добавить</button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+      <button class="adm-btn gold" onclick="saveGalleryModal()" style="padding:11px 24px">✓ Сохранить и закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="data.js?v=6"></script>
+<script>
+const $ = s => document.querySelector(s);
+const DEFAULT_CONFIG = window.DEFAULT_CONFIG || {
+  currency: 'сом',
+  phone: '+996 700 000 000',
+  address: 'Шабдалы базар',
+  area: 'Манас',
+  mapQuery: 'Шабдалы базар, Манас, Кыргызстан',
+  openHour: 10, closeHour: 20,
+  tgBotToken: '', tgChatId: '', liveToast: true
+};
+let CONFIG = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem('kz_config') || '{}'));
+const fmt = n => Number(n||0).toLocaleString('ru-RU').replace(/,/g,' ') + ' ' + CONFIG.currency;
+
+function getProductImages(p) {
+  if (p && Array.isArray(p.images) && p.images.length) return p.images;
+  if (p && p.img) return [p.img];
+  return ['assets/products/tt_1.jpg'];
+}
+
+const DEFAULT_PRODUCTS = window.DEFAULT_PRODUCTS || [];
+const REMOVED_PROD_IDS = new Set([301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 801, 802, 803, 901, 902]);
+function loadProducts() {
+  const saved = JSON.parse(localStorage.getItem('kz_products') || 'null');
+  if (!saved || !Array.isArray(saved) || !saved.length) {
+    const list = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)).filter(p => !REMOVED_PROD_IDS.has(p.id) && p.cat !== 'tshirt');
+    try { localStorage.setItem('kz_products', JSON.stringify(list)); } catch(e){}
+    return list;
+  }
+  const defMap = new Map(DEFAULT_PRODUCTS.map(d => [d.id, d]));
+  const mergedSaved = saved.filter(item => !REMOVED_PROD_IDS.has(item.id) && item.cat !== 'tshirt').map(item => {
+    const def = defMap.get(item.id);
+    if (def) {
+      if (!item.videoUrl && def.videoUrl) item.videoUrl = def.videoUrl;
+      if ((!item.images || !item.images.length) && def.images && def.images.length) {
+        item.images = def.images.slice();
+      }
+    }
+    if (item.images && Array.isArray(item.images)) {
+      item.images = item.images.filter(src => typeof src === 'string' && !src.startsWith('photo_'));
+    }
+    if (!item.images || !item.images.length) {
+      item.images = (item.img && !item.img.startsWith('photo_')) ? [item.img] : ['assets/products/tt_1.jpg'];
+    }
+    if (!item.img || item.img.startsWith('photo_')) {
+      item.img = item.images[0];
+    }
+    return item;
+  });
+  const ids = new Set(mergedSaved.map(x => x.id));
+  const missing = DEFAULT_PRODUCTS.filter(x => !ids.has(x.id) && !REMOVED_PROD_IDS.has(x.id) && x.cat !== 'tshirt');
+  const result = missing.length ? [...mergedSaved, ...missing] : mergedSaved;
+  try { localStorage.setItem('kz_products', JSON.stringify(result)); } catch(e){}
+  return result;
+}
+
+// --- Хранилище IndexedDB (неограниченная память для фото и каталога) ---
+const DB_NAME = 'KazetmoodDB';
+const DB_STORE = 'kz_store';
+function openKzDB() {
+  return new Promise((resolve) => {
+    if (!window.indexedDB) return resolve(null);
+    try {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        try { req.result.createObjectStore(DB_STORE); } catch(e){}
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    } catch(e) { resolve(null); }
+  });
+}
+async function idbGet(key) {
+  const db = await openKzDB();
+  if (!db) return null;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(DB_STORE, 'readonly');
+      const req = tx.objectStore(DB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    } catch(e) { resolve(null); }
+  });
+}
+async function idbSet(key, val) {
+  const db = await openKzDB();
+  if (!db) return false;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(DB_STORE, 'readwrite');
+      const req = tx.objectStore(DB_STORE).put(val, key);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => resolve(false);
+    } catch(e) { resolve(false); }
+  });
+}
+
+const kzChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('kazetmood_sync') : null;
+
+function compressBase64Image(dataUrl, maxSide = 640, quality = 0.68) {
+  return new Promise(resolve => {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+      return resolve(dataUrl);
+    }
+    if (dataUrl.length < 45000) return resolve(dataUrl); // уже лёгкое фото
+
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxSide || h > maxSide) {
+        if (w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
+        else { w = Math.round(w * maxSide / h); h = maxSide; }
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+async function autoCompressAllProducts(list, maxSide = 640, quality = 0.68) {
+  let modified = false;
+  for (const p of list) {
+    if (p.img && p.img.startsWith('data:image/') && p.img.length > 45000) {
+      p.img = await compressBase64Image(p.img, maxSide, quality);
+      modified = true;
+    }
+    if (Array.isArray(p.images)) {
+      for (let i = 0; i < p.images.length; i++) {
+        if (p.images[i] && p.images[i].startsWith('data:image/') && p.images[i].length > 45000) {
+          p.images[i] = await compressBase64Image(p.images[i], maxSide, quality);
+          modified = true;
+        }
+      }
+      if (p.images.length && (!p.img || p.img === 'assets/products/tt_1.jpg')) {
+        p.img = p.images[0];
+      }
+    }
+  }
+  return modified;
+}
+
+async function optimizeAndSaveFallback() {
+  toast('⚡ Оптимизируем фото для памяти браузера...');
+  await autoCompressAllProducts(PRODUCTS, 560, 0.62);
+  try {
+    localStorage.setItem('kz_products', JSON.stringify(PRODUCTS));
+    toast('✓ Память освобождена! Товар сохранён.');
+  } catch (e) {
+    console.warn('localStorage всё ещё переполнен, надёжно сохранено в IndexedDB', e);
+    toast('✓ Товар надёжно сохранён в базе браузера (IndexedDB)!');
+  }
+  await idbSet('kz_products', PRODUCTS);
+  if (kzChannel) kzChannel.postMessage({ type: 'sync_products' });
+  renderAdminAll();
+}
+
+let PRODUCTS = loadProducts();
+
+function saveProducts() {
+  // 1. Всегда пишем в IndexedDB (без лимита 5 МБ)
+  idbSet('kz_products', PRODUCTS).catch(console.error);
+
+  // 2. Оповещаем соседние вкладки через BroadcastChannel
+  try {
+    if (kzChannel) kzChannel.postMessage({ type: 'sync_products' });
+  } catch(e){}
+
+  // 3. Сохраняем в localStorage для мгновенного доступа
+  try {
+    localStorage.setItem('kz_products', JSON.stringify(PRODUCTS));
+    return true;
+  } catch (err) {
+    console.warn('localStorage переполнен. Запускаем мгновенную оптимизацию...', err);
+    optimizeAndSaveFallback();
+    return true; // Не прерываем процесс добавления товара!
+  }
+}
+
+// Автоматическая оптимизация и загрузка из IndexedDB при открытии админки
+(async () => {
+  try {
+    const idbList = await idbGet('kz_products');
+    if (idbList && Array.isArray(idbList) && idbList.length > 0) {
+      const cleaned = idbList.filter(p => p && !REMOVED_PROD_IDS.has(p.id) && p.cat !== 'tshirt');
+      if (cleaned.length !== idbList.length) {
+        await idbSet('kz_products', cleaned);
+        try { localStorage.setItem('kz_products', JSON.stringify(cleaned)); } catch(e){}
+      }
+      if (cleaned.length > PRODUCTS.length) {
+        PRODUCTS = cleaned;
+        renderAdminAll();
+      }
+    }
+    const raw = localStorage.getItem('kz_products');
+    if (raw && raw.length > 1500000) {
+      const shrank = await autoCompressAllProducts(PRODUCTS, 640, 0.68);
+      if (shrank) {
+        try { localStorage.setItem('kz_products', JSON.stringify(PRODUCTS)); } catch(e){}
+        await idbSet('kz_products', PRODUCTS);
+        console.log('✓ База фото оптимизирована при старте');
+      }
+    }
+  } catch(e){}
+})();
+
+const DEFAULT_ORDERS = [
+  {
+    id: 1001,
+    date: 'Сегодня, 14:20',
+    name: 'Бекзат',
+    phone: '+996 702 45 12 89',
+    comment: 'Манас, заберу сегодня после 17:00',
+    items: 'Куртка-ветровка с капюшоном · Black (XL) x1, Поло Loro Piana · Emerald Zip (2XL) x1',
+    total: 3300,
+    status: 'new'
+  },
+  {
+    id: 1002,
+    date: 'Вчера, 18:45',
+    name: 'Нурсултан',
+    phone: '+996 555 88 31 10',
+    comment: 'Доставка по городу',
+    items: 'Спортивный костюм MASAI · Black (L) x1, Джинсы Classic · Тёмный деним (32) x1',
+    total: 5199,
+    status: 'done'
+  }
+];
+let ORDERS = JSON.parse(localStorage.getItem('kz_orders') || 'null') || DEFAULT_ORDERS;
+function saveOrders() {
+  localStorage.setItem('kz_orders', JSON.stringify(ORDERS));
+}
+
+let tt;
+function toast(t){
+  const el=$('#toast');
+  el.textContent=t;
+  el.classList.add('on');
+  clearTimeout(tt);
+  tt=setTimeout(()=>el.classList.remove('on'),2400);
+}
+
+function switchAdmTab(tabId) {
+  document.querySelectorAll('#admTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tabId));
+  document.querySelectorAll('.adm-panel').forEach(p => p.classList.toggle('on', p.id === 'panel-' + tabId));
+}
+$('#admTabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-tab]');
+  if (b) switchAdmTab(b.dataset.tab);
+});
+
+function fileToCompressedDataUrl(file, maxSide = 640, quality = 0.68) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxSide || h > maxSide) {
+          if (w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
+          else { w = Math.round(w * maxSide / h); h = maxSide; }
+        }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('Не удалось прочитать изображение'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderAdminStats() {
+  const active = PRODUCTS.filter(p => !p.hidden);
+  const avg = active.length ? Math.round(active.reduce((s, p) => s + Number(p.price || 0), 0) / active.length) : 0;
+  const newOrders = ORDERS.filter(o => o.status === 'new').length;
+  const sumOrders = ORDERS.reduce((s, o) => s + Number(o.total || 0), 0);
+
+  $('#admProdCount').textContent = PRODUCTS.length;
+  $('#admOrderCount').textContent = ORDERS.length;
+  $('#stTotalProds').textContent = active.length + ' / ' + PRODUCTS.length;
+  const topCnt = PRODUCTS.filter(p=>p.cat==='top').length;
+  const botCnt = PRODUCTS.filter(p=>p.cat==='bottom').length;
+  const shoesCnt = PRODUCTS.filter(p=>p.cat==='shoes').length;
+  $('#stCatsInfo').textContent = `Верх: ${topCnt} · Брюки: ${botCnt} · Обувь: ${shoesCnt}`;
+  $('#stAvgPrice').textContent = fmt(avg);
+  $('#stOrdersCount').textContent = ORDERS.length;
+  $('#stNewOrders').textContent = `Новых заявок: ${newOrders}`;
+  $('#stOrdersSum').textContent = fmt(sumOrders);
+}
+
+let replaceTargetId = null;
+let draggedProdId = null;
+
+function clearDragOverClasses() {
+  document.querySelectorAll('.adm-row.drag-over-top, .adm-row.drag-over-bottom').forEach(r => {
+    r.classList.remove('drag-over-top', 'drag-over-bottom');
+  });
+}
+
+function moveProductToPosition(fromId, toId, insertBefore) {
+  const fromIdx = PRODUCTS.findIndex(p => p.id === fromId);
+  const toIdx = PRODUCTS.findIndex(p => p.id === toId);
+  if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+
+  const item = PRODUCTS.splice(fromIdx, 1)[0];
+  let targetIdx = PRODUCTS.findIndex(p => p.id === toId);
+  if (!insertBefore) targetIdx += 1;
+
+  PRODUCTS.splice(targetIdx, 0, item);
+  saveProducts();
+  renderAdminCatalog();
+  renderAdminStats();
+  toast(`✓ «${item.name}» перемещён на позицию #${targetIdx + 1}`);
+}
+
+function setupAdminDragAndDrop() {
+  const list = $('#admProdList');
+  if (!list) return;
+
+  const rows = list.querySelectorAll('.adm-row[draggable="true"]');
+  rows.forEach(row => {
+    row.addEventListener('dragstart', e => {
+      if (['INPUT', 'SELECT', 'BUTTON', 'A', 'TEXTAREA'].includes(e.target.tagName)) {
+        e.preventDefault();
+        return;
+      }
+      draggedProdId = +row.dataset.id;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(draggedProdId));
+    });
+
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      clearDragOverClasses();
+      draggedProdId = null;
+    });
+
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedProdId || +row.dataset.id === draggedProdId) return;
+      e.dataTransfer.dropEffect = 'move';
+
+      const rect = row.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      clearDragOverClasses();
+      if (e.clientY < midY) {
+        row.classList.add('drag-over-top');
+      } else {
+        row.classList.add('drag-over-bottom');
+      }
+    });
+
+    row.addEventListener('dragleave', e => {
+      if (!row.contains(e.relatedTarget)) {
+        row.classList.remove('drag-over-top', 'drag-over-bottom');
+      }
+    });
+
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetId = +row.dataset.id;
+      if (!draggedProdId || targetId === draggedProdId) {
+        clearDragOverClasses();
+        return;
+      }
+
+      const rect = row.getBoundingClientRect();
+      const insertBefore = e.clientY < (rect.top + rect.height / 2);
+
+      moveProductToPosition(draggedProdId, targetId, insertBefore);
+      clearDragOverClasses();
+    });
+  });
+
+  // Touch перетаскивание на смартфонах/планшетах за ручку ⋮⋮
+  list.querySelectorAll('.adm-drag-handle').forEach(handle => {
+    let touchRow = null;
+    let lastTarget = null;
+
+    handle.addEventListener('touchstart', e => {
+      touchRow = handle.closest('.adm-row');
+      if (!touchRow) return;
+      draggedProdId = +touchRow.dataset.id;
+      touchRow.classList.add('dragging');
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', e => {
+      if (!touchRow) return;
+      const t = e.touches[0];
+      if (!t) return;
+      const el = document.elementFromPoint(t.clientX, t.clientY);
+      const rowUnder = el ? el.closest('.adm-row[data-id]') : null;
+
+      clearDragOverClasses();
+      if (rowUnder && rowUnder !== touchRow) {
+        lastTarget = rowUnder;
+        const rect = rowUnder.getBoundingClientRect();
+        if (t.clientY < rect.top + rect.height / 2) {
+          rowUnder.classList.add('drag-over-top');
+        } else {
+          rowUnder.classList.add('drag-over-bottom');
+        }
+      }
+    }, { passive: true });
+
+    handle.addEventListener('touchend', () => {
+      if (!touchRow) return;
+      if (lastTarget && lastTarget !== touchRow) {
+        const isTop = lastTarget.classList.contains('drag-over-top');
+        moveProductToPosition(+touchRow.dataset.id, +lastTarget.dataset.id, isTop);
+      }
+      touchRow.classList.remove('dragging');
+      clearDragOverClasses();
+      touchRow = null;
+      lastTarget = null;
+      draggedProdId = null;
+    });
+  });
+}
+
+function renderAdminCatalog() {
+  const q = ($('#admSearch').value || '').trim().toLowerCase();
+  const cat = $('#admCatFilter').value;
+
+  const filtered = PRODUCTS.filter(p => {
+    const matchCat = cat === 'all' || p.cat === cat;
+    const matchQ = !q || p.name.toLowerCase().includes(q) || (p.sub || '').toLowerCase().includes(q) || String(p.price).includes(q);
+    return matchCat && matchQ;
+  });
+
+  $('#admProdList').innerHTML = filtered.map((p, idx) => {
+    const imgs = getProductImages(p);
+    return `
+    <div class="adm-row ${p.hidden ? 'is-hidden' : ''}" data-id="${p.id}" draggable="true">
+      <div class="adm-drag-handle" title="Зажмите и перетащите, чтобы переместить товар выше или ниже">
+        <span class="grip-icon">⋮⋮</span>
+        <span class="row-num">#${idx + 1}</span>
+      </div>
+      <div class="adm-thumb" onclick="openGalleryManager(${p.id})" title="📷 Управление фото (${imgs.length} шт.) — нажмите для открытия галереи">
+        <img src="${p.img}" alt="">
+        <span class="adm-photo-pill">📷 ${imgs.length} ✎</span>
+        <span class="ov">📷 Фото (${imgs.length})</span>
+      </div>
+      <div>
+        <input class="adm-inp" value="${p.name.replace(/"/g, '&quot;')}" onchange="updateProdField(${p.id}, 'name', this.value)" placeholder="Название товара">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <input class="adm-inp" value="${(p.sub || '').replace(/"/g, '&quot;')}" onchange="updateProdField(${p.id}, 'sub', this.value)" placeholder="Описание / размеры">
+        <div style="display:flex;gap:5px;align-items:center">
+          <input class="adm-inp" style="font-size:11px;padding:6px 8px;border-color:${p.videoUrl?'#e11d4866':'#ffffff18'}" value="${(p.videoUrl || '').replace(/"/g, '&quot;')}" onchange="updateProdField(${p.id}, 'videoUrl', this.value.trim())" placeholder="🎬 Ссылка на видео (TikTok / Instagram Reels)">
+          ${p.videoUrl ? `<a href="${p.videoUrl}" target="_blank" class="adm-ic" style="width:28px;height:28px;background:#e11d4833;color:#ff8fa3;flex-shrink:0" title="Проверить видео">▶</a>` : ''}
+        </div>
+      </div>
+      <div>
+        <select class="adm-select" style="width:100%;padding:8px" onchange="updateProdField(${p.id}, 'cat', this.value)">
+          <option value="top" ${p.cat==='top'?'selected':''}>Костюмы / Верх</option>
+          <option value="bottom" ${p.cat==='bottom'?'selected':''}>Джинсы & Брюки</option>
+          <option value="shoes" ${p.cat==='shoes'?'selected':''}>Обувь</option>
+        </select>
+      </div>
+      <div class="adm-price-wrap">
+        <input class="adm-inp" type="number" value="${p.price}" onchange="updateProdField(${p.id}, 'price', +this.value)">
+        <em>сом</em>
+      </div>
+      <div class="adm-row-btns">
+        <button class="adm-ic gold" onclick="openGalleryManager(${p.id})" title="📷 Управление фото (${imgs.length} шт.) — добавить / удалить / обложка" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:3px">📷 ${imgs.length}</button>
+        <button class="adm-ic gold" onclick="openStoryGenerator(${p.id})" title="Скачать готовую картинку 9:16 для Stories / TikTok">📱</button>
+        <button class="adm-ic gold" onclick="printPriceTag(${p.id})" title="Печать ценника с QR-кодом для магазина">🏷</button>
+        <button class="adm-ic" onclick="moveProd(${p.id}, -1)" title="Поднять выше на 1 позицию">↑</button>
+        <button class="adm-ic" onclick="moveProd(${p.id}, 1)" title="Опустить ниже на 1 позицию">↓</button>
+        <button class="adm-ic" onclick="toggleHideProd(${p.id})" title="${p.hidden ? 'Показать на витрине' : 'Скрыть с витрины'}">${p.hidden ? '🙈' : '👁'}</button>
+        <button class="adm-ic del" onclick="deleteProd(${p.id})" title="Удалить товар">🗑</button>
+      </div>
+    </div>
+  `;
+  }).join('') || '<div style="padding:32px;text-align:center;color:#ffffff66">Ничего не найдено по вашему запросу</div>';
+
+  setupAdminDragAndDrop();
+}
+
+/* --- #17 Генератор картинок 9:16 для Stories и Печать ценников с QR-кодом --- */
+let currentStoryProd = null;
+window.openStoryGenerator = function(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  currentStoryProd = p;
+  const canvas = $('#storyCanvas');
+  const ctx = canvas.getContext('2d');
+  $('#storyModal').classList.add('on');
+
+  // Фон люкс-шаблона 1080x1920
+  const grad = ctx.createLinearGradient(0, 0, 0, 1920);
+  grad.addColorStop(0, '#0c0d0b');
+  grad.addColorStop(0.5, '#171915');
+  grad.addColorStop(1, '#0c0d0b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1080, 1920);
+
+  // Золотая рамка
+  ctx.strokeStyle = 'rgba(201, 138, 59, 0.45)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(44, 44, 992, 1832);
+
+  // Шапка бренда
+  ctx.fillStyle = '#f5c27a';
+  ctx.font = '600 28px Inter, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('НОВОЕ ПОСТУПЛЕНИЕ · КОЛЛЕКЦИЯ 2026', 540, 130);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 68px Georgia, serif';
+  ctx.fillText('KAZETMOOD', 540, 215);
+
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    // Рисуем фото товара по центру (880 x 1100)
+    const bx = 100, by = 270, bw = 880, bh = 1100;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 36);
+    ctx.clip();
+    const scale = Math.max(bw / img.width, bh / img.height);
+    const dw = img.width * scale, dh = img.height * scale;
+    ctx.drawImage(img, bx + (bw - dw) / 2, by, dw, dh);
+    ctx.restore();
+
+    drawStoryFooter(ctx, p);
+  };
+  img.onerror = () => drawStoryFooter(ctx, p);
+  img.src = p.img;
+};
+
+function drawStoryFooter(ctx, p) {
+  // Название и описание
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 46px Inter, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(p.name.slice(0, 34), 540, 1465);
+
+  ctx.fillStyle = '#b5b6ae';
+  ctx.font = '400 30px Inter, Arial, sans-serif';
+  ctx.fillText((p.sub || '').slice(0, 48), 540, 1520);
+
+  // Плашка цены
+  ctx.fillStyle = '#c98a3b';
+  ctx.beginPath();
+  ctx.roundRect(270, 1570, 540, 118, 60);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 58px Inter, Arial, sans-serif';
+  ctx.fillText(fmt(p.price), 540, 1648);
+
+  // Подвал с адресом и Instagram/TikTok
+  ctx.fillStyle = '#f5c27a';
+  ctx.font = '600 28px Inter, Arial, sans-serif';
+  ctx.fillText(`📍 ${CONFIG.area} · ${CONFIG.address}   |   @kazetmood_`, 540, 1775);
+
+  ctx.fillStyle = '#ffffff88';
+  ctx.font = '500 24px Inter, Arial, sans-serif';
+  ctx.fillText(`Заказ в Direct / WhatsApp: ${CONFIG.phone}`, 540, 1825);
+}
+
+$('#downloadStoryBtn').onclick = () => {
+  const canvas = $('#storyCanvas');
+  try {
+    const a = document.createElement('a');
+    a.download = `kazetmood_story_${currentStoryProd ? currentStoryProd.id : 'item'}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    toast('Картинка для Stories (1080×1920) скачана!');
+  } catch (e) {
+    toast('Нажмите правой кнопкой мыши по картинке → «Сохранить изображение как...»');
+  }
+};
+
+window.printPriceTag = function(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  const qrTarget = (p.videoUrl && p.videoUrl.trim()) ? p.videoUrl.trim() : 'https://instagram.com/kazetmood_';
+  const qrImg = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrTarget)}`;
+  const sizesMap = { top: 'S · M · L · XL · 2XL', bottom: '30 · 32 · 34 · 36', shoes: '41 · 42 · 43 · 44' };
+  const w = window.open('', '_blank', 'width=480,height=680');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Ценник — ${p.name}</title>
+  <style>
+    body{font-family:Inter,Arial,sans-serif;background:#f4f2ed;display:flex;flex-direction:column;align-items:center;padding:24px;margin:0}
+    .tag{width:320px;background:#fff;border:2px solid #0c0d0b;border-radius:18px;padding:24px 20px;text-align:center;box-shadow:0 12px 30px #0000001a;position:relative}
+    .hole{width:18px;height:18px;border-radius:50%;border:2px solid #0c0d0b;background:#f4f2ed;margin:0 auto 14px}
+    .brand{font:700 24px/1 Georgia,serif;letter-spacing:.14em;margin-bottom:4px}
+    .loc{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#666;margin-bottom:16px;padding-bottom:12px;border-bottom:1px dashed #ccc}
+    .name{font-size:16px;font-weight:700;margin-bottom:6px;color:#0c0d0b}
+    .sub{font-size:12px;color:#555;margin-bottom:14px}
+    .sizes{font-size:11px;font-weight:600;background:#f4f2ed;padding:7px 10px;border-radius:8px;margin-bottom:16px}
+    .price{font-size:32px;font-weight:800;color:#0c0d0b;background:#f5c27a44;border:1.5px solid #c98a3b;padding:10px;border-radius:12px;margin-bottom:16px}
+    .qr{width:130px;height:130px;margin:0 auto 6px;display:block}
+    .qr-lbl{font-size:10px;color:#666}
+    .btn{margin-top:18px;padding:12px 24px;background:#0c0d0b;color:#fff;border:0;border-radius:99px;font-weight:600;cursor:pointer}
+    @media print{.btn{display:none}body{background:#fff;padding:0}.tag{box-shadow:none}}
+  </style></head><body>
+    <div class="tag">
+      <div class="hole"></div>
+      <div class="brand">KAZETMOOD</div>
+      <div class="loc">${CONFIG.area} · ${CONFIG.address}</div>
+      <div class="name">${p.name}</div>
+      <div class="sub">${p.sub || ''}</div>
+      <div class="sizes">Размеры: ${sizesMap[p.cat] || sizesMap.top}</div>
+      <div class="price">${fmt(p.price)}</div>
+      <img class="qr" src="${qrImg}" alt="QR">
+      <div class="qr-lbl">${p.videoUrl ? 'Наведи камеру: видео-обзор модели' : 'Наведи камеру: @kazetmood_'}</div>
+    </div>
+    <button class="btn" onclick="window.print()">🖨 Распечатать ценник</button>
+  </body></html>`);
+  w.document.close();
+};
+
+window.updateProdField = function(id, field, val) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  p[field] = field === 'price' ? Math.max(0, Number(val) || 0) : val;
+  saveProducts();
+  renderAdminStats();
+  if (field === 'videoUrl') renderAdminCatalog();
+  toast('Сохранено: ' + p.name);
+};
+
+window.moveProd = function(id, dir) {
+  const idx = PRODUCTS.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const target = idx + dir;
+  if (target < 0 || target >= PRODUCTS.length) return;
+  const tmp = PRODUCTS[idx];
+  PRODUCTS[idx] = PRODUCTS[target];
+  PRODUCTS[target] = tmp;
+  saveProducts();
+  renderAdminCatalog();
+};
+
+window.toggleHideProd = function(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  p.hidden = !p.hidden;
+  saveProducts();
+  renderAdminAll();
+  toast(p.hidden ? 'Товар скрыт с витрины' : 'Товар снова показан на сайте');
+};
+
+window.deleteProd = function(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`Удалить товар «${p.name}»?`)) return;
+  PRODUCTS = PRODUCTS.filter(x => x.id !== id);
+  saveProducts();
+  renderAdminAll();
+  toast('Товар удалён');
+};
+
+window.triggerReplacePhoto = function(id) {
+  replaceTargetId = id;
+  $('#admReplacePhotoInput').value = '';
+  $('#admReplacePhotoInput').click();
+};
+
+$('#admReplacePhotoInput').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file || !replaceTargetId) return;
+  const p = PRODUCTS.find(x => x.id === replaceTargetId);
+  if (!p) return;
+  const dataUrl = await fileToCompressedDataUrl(file);
+  p.img = dataUrl;
+  saveProducts();
+  renderAdminCatalog();
+  toast('Фото товара обновлено!');
+});
+
+$('#admSearch').addEventListener('input', renderAdminCatalog);
+$('#admCatFilter').addEventListener('change', renderAdminCatalog);
+
+
+
+/* --- Мульти-фото для нового товара (panel-add) --- */
+let newProductPhotos = ['assets/products/tt_1.jpg'];
+
+function renderNewPhotosGallery() {
+  const box = $('#admNewPhotosList');
+  const cnt = $('#admNewPhotosCount');
+  if (cnt) cnt.textContent = `${newProductPhotos.length} фото`;
+  if ($('#admPreviewImg') && newProductPhotos.length) {
+    $('#admPreviewImg').src = newProductPhotos[0];
+  }
+
+  if (!box) return;
+  box.innerHTML = newProductPhotos.map((src, idx) => `
+    <div class="adm-photo-card" data-idx="${idx}">
+      <img src="${src}" alt="Фото ${idx+1}">
+      ${idx === 0 ? '<span class="cover-badge">★ Обложка</span>' : ''}
+      <div class="actions">
+        ${idx > 0 ? `<button type="button" onclick="makeNewPhotoCover(${idx})" title="Сделать обложкой">⭐</button>` : '<span></span>'}
+        <button type="button" onclick="removeNewPhoto(${idx})" title="Удалить фото">✕</button>
+      </div>
+    </div>
+  `).join('') + `
+    <label class="adm-photo-card add-box" for="admNewPhotoFile" title="Добавить ещё фото">
+      <span style="font-size:18px">+</span>
+      <span>Ещё фото</span>
+    </label>
+  `;
+}
+
+window.makeNewPhotoCover = function(idx) {
+  if (idx <= 0 || idx >= newProductPhotos.length) return;
+  const item = newProductPhotos.splice(idx, 1)[0];
+  newProductPhotos.unshift(item);
+  renderNewPhotosGallery();
+  toast('Главное фото обновлено');
+};
+
+window.removeNewPhoto = function(idx) {
+  if (newProductPhotos.length <= 1) {
+    return toast('У товара должно быть хотя бы одно фото');
+  }
+  newProductPhotos.splice(idx, 1);
+  renderNewPhotosGallery();
+  toast('Фото удалено');
+};
+
+$('#admNewPhotoFile').addEventListener('change', async e => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  toast(`Загрузка ${files.length} фото...`);
+  for (const file of files) {
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file);
+      newProductPhotos.push(dataUrl);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  if (newProductPhotos[0] === 'assets/products/tt_1.jpg' && newProductPhotos.length > 1) {
+    newProductPhotos.shift();
+  }
+  renderNewPhotosGallery();
+  toast(`Загружено ${files.length} фото!`);
+});
+
+if ($('#admAddPhotoUrlBtn')) {
+  $('#admAddPhotoUrlBtn').onclick = () => {
+    const url = ($('#admNewPhotoUrl').value || '').trim();
+    if (!url) return toast('Введите ссылку или путь к фото');
+    newProductPhotos.push(url);
+    if (newProductPhotos[0] === 'assets/products/tt_1.jpg' && newProductPhotos.length > 1) {
+      newProductPhotos.shift();
+    }
+    $('#admNewPhotoUrl').value = '';
+    renderNewPhotosGallery();
+    toast('Фото добавлено по ссылке');
+  };
+}
+
+$('#admSaveNewBtn').onclick = () => {
+  const nameInp = $('#admNewName');
+  const name = (nameInp.value || '').trim();
+  const price = Math.max(0, Number($('#admNewPrice').value) || 0);
+  const cat = $('#admNewCat').value;
+  const sub = $('#admNewSub').value.trim() || 'Новое поступление · Kazetmood';
+  const videoUrl = ($('#admNewVideo').value || '').trim();
+  const images = (newProductPhotos && newProductPhotos.length) ? newProductPhotos.slice() : ['assets/products/tt_1.jpg'];
+  const img = images[0];
+  const pos = $('#admNewPos').value;
+
+  if (!name) {
+    nameInp.style.borderColor = '#ef4444';
+    nameInp.focus();
+    return toast('⚠️ Введите название товара!');
+  }
+  nameInp.style.borderColor = '';
+
+  const newProd = { id: Date.now(), cat, name, sub, price, img, images, videoUrl };
+  if (pos === 'first') PRODUCTS.unshift(newProd);
+  else PRODUCTS.push(newProd);
+
+  const ok = saveProducts();
+  if (!ok) return;
+
+  // Сбрасываем фильтры каталога, чтобы добавленный товар сразу был на виду
+  if ($('#admSearch')) $('#admSearch').value = '';
+  if ($('#admCatFilter')) $('#admCatFilter').value = 'all';
+
+  renderAdminAll();
+  nameInp.value = '';
+  $('#admNewSub').value = '';
+  $('#admNewVideo').value = '';
+  $('#admNewPhotoUrl').value = '';
+  newProductPhotos = ['assets/products/tt_1.jpg'];
+  renderNewPhotosGallery();
+  switchAdmTab('catalog');
+  toast(`✓ Товар «${name}» добавлен в витрину!`);
+
+  // Плавный скролл к новому товару и золотая подсветка строки
+  setTimeout(() => {
+    const row = document.querySelector(`.adm-row[data-id="${newProd.id}"]`);
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.style.outline = '2px solid #c98a3b';
+      row.style.boxShadow = '0 0 25px rgba(201,138,59,.5)';
+      setTimeout(() => {
+        row.style.outline = '';
+        row.style.boxShadow = '';
+      }, 2500);
+    }
+  }, 120);
+};
+
+$('#admNewName').addEventListener('input', function() {
+  if (this.value.trim()) this.style.borderColor = '';
+});
+
+/* --- Управление галереей фото существующего товара (#galleryModal) --- */
+let currentGalleryProdId = null;
+
+window.openGalleryManager = function(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  if (!p) return;
+  currentGalleryProdId = id;
+  if (!p.images || !p.images.length) {
+    p.images = p.img ? [p.img] : ['assets/products/tt_1.jpg'];
+  }
+  $('#galModalTitle').textContent = `📷 Фотографии: ${p.name}`;
+  renderGalleryModalPhotos();
+  $('#galleryModal').classList.add('on');
+};
+
+function renderGalleryModalPhotos() {
+  const p = PRODUCTS.find(x => x.id === currentGalleryProdId);
+  if (!p) return;
+  const imgs = p.images || [p.img];
+  const box = $('#galModalGrid');
+  box.innerHTML = imgs.map((src, idx) => `
+    <div class="adm-photo-card" style="aspect-ratio:3/4">
+      <img src="${src}" alt="Фото ${idx+1}">
+      ${idx === 0 ? '<span class="cover-badge">★ Обложка</span>' : ''}
+      <div class="actions">
+        ${idx > 0 ? `<button type="button" onclick="makeProdCover(${idx})" title="Сделать главным (обложкой)">⭐ Обложка</button>` : '<span></span>'}
+        ${imgs.length > 1 ? `<button type="button" onclick="removeProdPhoto(${idx})" title="Удалить это фото">🗑</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+window.makeProdCover = function(idx) {
+  const p = PRODUCTS.find(x => x.id === currentGalleryProdId);
+  if (!p || idx <= 0 || idx >= p.images.length) return;
+  const item = p.images.splice(idx, 1)[0];
+  p.images.unshift(item);
+  p.img = p.images[0];
+  saveProducts();
+  renderGalleryModalPhotos();
+  renderAdminCatalog();
+  toast('Главное фото товара обновлено');
+};
+
+window.removeProdPhoto = function(idx) {
+  const p = PRODUCTS.find(x => x.id === currentGalleryProdId);
+  if (!p || p.images.length <= 1) return toast('У товара должно остаться хотя бы одно фото');
+  p.images.splice(idx, 1);
+  p.img = p.images[0];
+  saveProducts();
+  renderGalleryModalPhotos();
+  renderAdminCatalog();
+  toast('Фото удалено');
+};
+
+$('#galModalFileInput').addEventListener('change', async e => {
+  const p = PRODUCTS.find(x => x.id === currentGalleryProdId);
+  if (!p) return;
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  toast(`Загрузка ${files.length} фото...`);
+  for (const file of files) {
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file);
+      p.images.push(dataUrl);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  p.img = p.images[0];
+  saveProducts();
+  renderGalleryModalPhotos();
+  renderAdminCatalog();
+  toast(`Успешно добавлено ${files.length} фото!`);
+});
+
+$('#galModalAddUrlBtn').onclick = () => {
+  const p = PRODUCTS.find(x => x.id === currentGalleryProdId);
+  if (!p) return;
+  const url = ($('#galModalUrlInp').value || '').trim();
+  if (!url) return toast('Введите ссылку или путь к фото');
+  p.images.push(url);
+  p.img = p.images[0];
+  $('#galModalUrlInp').value = '';
+  saveProducts();
+  renderGalleryModalPhotos();
+  renderAdminCatalog();
+  toast('Фото добавлено по ссылке!');
+};
+
+window.closeGalleryModal = function() {
+  $('#galleryModal').classList.remove('on');
+};
+
+window.saveGalleryModal = function() {
+  saveProducts();
+  renderAdminAll();
+  closeGalleryModal();
+  toast('Все фото товара сохранены!');
+};
+
+function renderAdminOrders() {
+  const box = $('#admOrdersList');
+  if (!ORDERS.length) {
+    box.innerHTML = '<div class="adm-card" style="text-align:center;color:#ffffff75">Пока нет заказов. Когда клиент оформит заказ через корзину, он появится здесь.</div>';
+    return;
+  }
+  box.innerHTML = ORDERS.map(o => `
+    <div class="adm-order">
+      <div>
+        <div style="font-weight:700;font-size:15px;color:#fff">${o.name}</div>
+        <div style="color:var(--amber);font-size:13px;margin-top:3px">${o.phone}</div>
+        <div style="color:#ffffff66;font-size:11px;margin-top:4px">${o.date}</div>
+      </div>
+      <div>
+        <div style="font-size:13px;color:#f4f2ed;line-height:1.45">${o.items}</div>
+        ${o.comment ? `<div style="font-size:12px;color:#ffffff85;margin-top:5px">💬 ${o.comment}</div>` : ''}
+      </div>
+      <div>
+        <div style="font:700 18px/1 'Playfair Display',serif;color:#fff;margin-bottom:8px">${fmt(o.total)}</div>
+        <span class="adm-order-status ${o.status === 'done' ? 'done' : 'new'}">${o.status === 'done' ? '✓ Выполнен' : '● Новый заказ'}</span>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:flex-end">
+        <button class="adm-btn" onclick="toggleOrderStatus(${o.id})">${o.status === 'done' ? 'Вернуть в новые' : '✓ Выполнено'}</button>
+        <button class="adm-ic del" onclick="deleteOrder(${o.id})" title="Удалить заказ">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.toggleOrderStatus = function(id) {
+  const o = ORDERS.find(x => x.id === id);
+  if (!o) return;
+  o.status = o.status === 'done' ? 'new' : 'done';
+  saveOrders();
+  renderAdminAll();
+};
+
+window.deleteOrder = function(id) {
+  ORDERS = ORDERS.filter(x => x.id !== id);
+  saveOrders();
+  renderAdminAll();
+};
+
+$('#admAddTestOrder').onclick = () => {
+  const sample = PRODUCTS[0] || {name:'Куртка-ветровка', price:2500};
+  ORDERS.unshift({
+    id: Date.now(),
+    date: 'Только что',
+    name: 'Тестовый клиент',
+    phone: '+996 700 12 34 56',
+    comment: 'Проверка работы админ-панели',
+    items: `${sample.name} (XL) x1`,
+    total: sample.price,
+    status: 'new'
+  });
+  saveOrders();
+  renderAdminAll();
+  toast('Тестовый заказ добавлен');
+};
+
+$('#admClearOrders').onclick = () => {
+  if (!confirm('Очистить весь список заказов?')) return;
+  ORDERS = [];
+  saveOrders();
+  renderAdminAll();
+  toast('История заказов очищена');
+};
+
+function fillAdminSettings() {
+  $('#cfgPhone').value = CONFIG.phone || '';
+  $('#cfgArea').value = CONFIG.area || '';
+  $('#cfgAddress').value = CONFIG.address || '';
+  $('#cfgMap').value = CONFIG.mapQuery || '';
+  $('#cfgOpen').value = CONFIG.openHour ?? 10;
+  $('#cfgClose').value = CONFIG.closeHour ?? 20;
+  $('#cfgLiveToast').value = String(CONFIG.liveToast !== false);
+  $('#cfgTgToken').value = CONFIG.tgBotToken || '';
+  $('#cfgTgChat').value = CONFIG.tgChatId || '';
+}
+
+function saveAllConfig() {
+  CONFIG.phone = $('#cfgPhone').value.trim() || DEFAULT_CONFIG.phone;
+  CONFIG.area = $('#cfgArea').value.trim() || DEFAULT_CONFIG.area;
+  CONFIG.address = $('#cfgAddress').value.trim() || DEFAULT_CONFIG.address;
+  CONFIG.mapQuery = $('#cfgMap').value.trim() || DEFAULT_CONFIG.mapQuery;
+  CONFIG.openHour = Number($('#cfgOpen').value) || 10;
+  CONFIG.closeHour = Number($('#cfgClose').value) || 20;
+  CONFIG.liveToast = $('#cfgLiveToast').value === 'true';
+  CONFIG.tgBotToken = $('#cfgTgToken').value.trim();
+  CONFIG.tgChatId = $('#cfgTgChat').value.trim();
+  localStorage.setItem('kz_config', JSON.stringify(CONFIG));
+}
+
+$('#cfgSaveBtn').onclick = () => {
+  saveAllConfig();
+  toast('Настройки магазина сохранены!');
+};
+
+$('#cfgSaveTgBtn').onclick = () => {
+  saveAllConfig();
+  toast('Настройки Telegram-бота сохранены!');
+};
+
+$('#cfgTestTgBtn').onclick = async () => {
+  saveAllConfig();
+  if (!CONFIG.tgBotToken || !CONFIG.tgChatId) {
+    return toast('Укажите Bot Token и ваш Chat ID для отправки теста!');
+  }
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${CONFIG.tgBotToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: CONFIG.tgChatId,
+        parse_mode: 'HTML',
+        text: `✅ <b>KAZETMOOD — Связь с сайтом установлена!</b>\nСюда за 1 секунду будут прилетать все новые заказы с сайта.`
+      })
+    });
+    const data = await res.json();
+    if (data && data.ok) toast('🚀 Тестовое сообщение успешно отправлено в ваш Telegram!');
+    else toast('Ошибка Telegram API: ' + (data.description || 'проверьте токен и Chat ID'));
+  } catch (e) {
+    toast('Ошибка сети при подключении к Telegram API');
+  }
+};
+
+/* Запись напрямую в data.js через File System Access API или скачивание */
+$('#admSaveDataJs').onclick = async () => {
+  const jsContent = `/* =========================================================\n   БАЗА ДАННЫХ МАГАЗИНА KAZETMOOD (общая для index.html и admin.html)\n   ========================================================= */\nwindow.DEFAULT_CONFIG = ${JSON.stringify(CONFIG, null, 2)};\n\nwindow.DEFAULT_PRODUCTS = ${JSON.stringify(PRODUCTS, null, 2)};\n`;
+  try {
+    if (window.showSaveFilePicker) {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'data.js',
+        types: [{ description: 'JavaScript Database', accept: { 'text/javascript': ['.js'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(jsContent);
+      await writable.close();
+      toast('Файл data.js успешно перезаписан!');
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+  }
+  const blob = new Blob([jsContent], {type: 'text/javascript;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.js';
+  a.click();
+  toast('Файл data.js скачан!');
+};
+
+if ($('#admOptimizeStorageBtn')) {
+  $('#admOptimizeStorageBtn').onclick = async () => {
+    toast('⏳ Оптимизируем все фото в каталоге...');
+    const rawBefore = (localStorage.getItem('kz_products') || '').length;
+    await autoCompressAllProducts(PRODUCTS, 580, 0.65);
+    try {
+      localStorage.setItem('kz_products', JSON.stringify(PRODUCTS));
+    } catch(e){}
+    await idbSet('kz_products', PRODUCTS);
+    if (kzChannel) kzChannel.postMessage({ type: 'sync_products' });
+    const rawAfter = (localStorage.getItem('kz_products') || '').length;
+    const savedKb = Math.max(0, Math.round((rawBefore - rawAfter) / 1024));
+    renderAdminAll();
+    toast(`✓ Память очищена! Освобождено ${savedKb} КБ.`);
+  };
+}
+
+$('#admExportJson').onclick = () => {
+  navigator.clipboard.writeText(JSON.stringify(PRODUCTS, null, 2));
+  toast('JSON список товаров скопирован!');
+};
+
+$('#admResetDefault').onclick = () => {
+  if (!confirm('Сбросить все изменения каталога к исходному списку?')) return;
+  localStorage.removeItem('kz_products');
+  PRODUCTS = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+  renderAdminAll();
+  toast('Каталог восстановлен');
+};
+
+window.addEventListener('storage', e => {
+  if (e.key === 'kz_orders') {
+    ORDERS = JSON.parse(localStorage.getItem('kz_orders') || 'null') || DEFAULT_ORDERS;
+    renderAdminAll();
+  }
+});
+
+/* --- Аналитика, Графики и База клиентов --- */
+function getUniqueClients() {
+  const map = new Map();
+  ORDERS.forEach(o => {
+    const rawPhone = (o.phone || '').trim();
+    const cleanPhone = rawPhone.replace(/\D/g, '');
+    const key = cleanPhone || rawPhone || ('anon_' + o.id);
+    if (!map.has(key)) {
+      map.set(key, {
+        name: o.name || 'Покупатель',
+        phone: rawPhone,
+        cleanPhone,
+        orderCount: 0,
+        totalSpent: 0,
+        lastDate: o.date,
+        lastItems: o.items || ''
+      });
+    }
+    const c = map.get(key);
+    c.orderCount++;
+    c.totalSpent += Number(o.total || 0);
+    if (!c.name || c.name === 'Покупатель') c.name = o.name;
+    c.lastItems = o.items || c.lastItems;
+  });
+  return Array.from(map.values()).sort((a,b) => b.totalSpent - a.totalSpent);
+}
+
+function renderAdminAnalytics() {
+  const totalRev = ORDERS.reduce((s,o) => s + Number(o.total || 0), 0);
+  const doneRev = ORDERS.filter(o => o.status === 'done').reduce((s,o) => s + Number(o.total || 0), 0);
+  const newCount = ORDERS.filter(o => o.status === 'new').length;
+  const doneCount = ORDERS.filter(o => o.status === 'done').length;
+  const avgCheck = ORDERS.length ? Math.round(totalRev / ORDERS.length) : 0;
+  const clients = getUniqueClients();
+
+  $('#anTotalRevenue').textContent = fmt(totalRev);
+  $('#anCompletedRevenue').textContent = fmt(doneRev) + ' выполнено';
+  $('#anTotalOrdersCount').textContent = ORDERS.length + ' шт.';
+  $('#anOrdersSplit').textContent = `${newCount} новых / ${doneCount} выполнено`;
+  $('#anAverageCheck').textContent = fmt(avgCheck);
+  $('#anUniqueClientsCount').textContent = clients.length + ' чел.';
+
+  // 1. График продаж по дням
+  const dailyMap = {};
+  ORDERS.forEach(o => {
+    const d = (o.date || 'Сегодня').split(',')[0].trim();
+    if (!dailyMap[d]) dailyMap[d] = { sum: 0, count: 0 };
+    dailyMap[d].sum += Number(o.total || 0);
+    dailyMap[d].count++;
+  });
+  const days = Object.keys(dailyMap);
+  if (!days.length) {
+    $('#anDailyChart').innerHTML = '<div style="margin:auto;color:#ffffff66;font-size:12px">Нет данных по продажам</div>';
+  } else {
+    const maxDaySum = Math.max(...days.map(d => dailyMap[d].sum), 1);
+    $('#anDailyChart').innerHTML = days.map(d => {
+      const data = dailyMap[d];
+      const hPercent = Math.max(12, Math.round((data.sum / maxDaySum) * 100));
+      return `
+        <div class="an-bar-col" title="${d}: ${fmt(data.sum)} (${data.count} зак.)">
+          <span class="an-bar-val">${fmt(data.sum)}</span>
+          <div class="an-bar-fill" style="height:${hPercent}%"></div>
+          <span class="an-bar-label">${d} <small style="color:var(--amber)">(${data.count})</small></span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 2. Доли категорий витрины
+  const catSums = { top: 0, bottom: 0, shoes: 0 };
+  ORDERS.forEach(o => {
+    const text = (o.items || '').toLowerCase();
+    if (text.includes('куртка') || text.includes('костюм') || text.includes('жилет') || text.includes('бомбер') || text.includes('худи')) catSums.top += o.total * 0.55;
+    if (text.includes('джинс') || text.includes('брюк') || text.includes('чинос') || text.includes('джоггер')) catSums.bottom += o.total * 0.3;
+    if (text.includes('лофер') || text.includes('кед') || text.includes('обув') || text.includes('кроссов')) catSums.shoes += o.total * 0.15;
+  });
+  const totalCatSum = Math.max(1, Object.values(catSums).reduce((a,b)=>a+b, 0));
+  const catConfigs = [
+    { key: 'top', name: '🧥 Костюмы, Куртки & Бомберы', color: '#38bdf8' },
+    { key: 'bottom', name: '👖 Джинсы & Брюки', color: '#c084fc' },
+    { key: 'shoes', name: '👞 Обувь & Лоферы', color: '#fbbf24' }
+  ];
+  $('#anCategoryBars').innerHTML = catConfigs.map(c => {
+    const sum = Math.round(catSums[c.key]);
+    const pct = Math.round((sum / totalCatSum) * 100);
+    return `
+      <div class="an-cat-row">
+        <div class="an-cat-head">
+          <span style="color:#fff">${c.name}</span>
+          <span style="color:${c.color}">${pct}% (${fmt(sum)})</span>
+        </div>
+        <div class="an-cat-track">
+          <div class="an-cat-prog" style="width:${Math.max(4, pct)}%;background:${c.color}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 3. Таблица уникальных покупателей
+  if (!clients.length) {
+    $('#anClientsList').innerHTML = '<div style="padding:20px;text-align:center;color:#ffffff66">База клиентов пуста</div>';
+  } else {
+    $('#anClientsList').innerHTML = clients.map(c => {
+      const waLink = c.cleanPhone ? `https://wa.me/${c.cleanPhone}?text=${encodeURIComponent(`Здравствуйте, ${c.name}! 👋 В магазин KAZETMOOD пришло новое поступление вещей, хотели лично вам предложить:`)}` : '#';
+      return `
+        <div class="adm-row" style="grid-template-columns:1.2fr 1.3fr .9fr 1.1fr 1.6fr">
+          <div style="font-weight:700;color:#fff">${c.name}</div>
+          <div>
+            <div style="font-size:12.5px;color:var(--amber)">${c.phone}</div>
+            ${c.cleanPhone ? `<a href="${waLink}" target="_blank" style="font-size:11px;color:#4ade80;text-decoration:underline">💬 Написать в WhatsApp ↗</a>` : ''}
+          </div>
+          <div style="font-weight:600;color:#fff">${c.orderCount} зак.</div>
+          <div style="font-weight:700;color:var(--amber)">${fmt(c.totalSpent)}</div>
+          <div style="font-size:11.5px;color:#ffffff99;line-height:1.3">
+            <div>${c.lastDate}</div>
+            <div style="font-size:11px;color:#ffffff66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">${c.lastItems}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// 📥 Экспорт базы клиентов в CSV (Excel-совместимый UTF-8 BOM)
+function exportClientsToCsv() {
+  const clients = getUniqueClients();
+  if (!clients.length) return toast('В базе пока нет клиентов для экспорта');
+
+  const headers = ['Имя клиента', 'Телефон', 'WhatsApp ссылка', 'Количество заказов', 'Сумма покупок (сом)', 'Последний заказ', 'Состав последнего заказа'];
+  const rows = clients.map(c => [
+    `"${(c.name || '').replace(/"/g, '""')}"`,
+    `"${(c.phone || '').replace(/"/g, '""')}"`,
+    `"https://wa.me/${c.cleanPhone}"`,
+    c.orderCount,
+    c.totalSpent,
+    `"${(c.lastDate || '').replace(/"/g, '""')}"`,
+    `"${(c.lastItems || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `kazetmood_clients_${dateStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('📥 База клиентов успешно скачана в Excel (CSV)!');
+}
+
+// 📋 Копирование номеров для WhatsApp-рассылки
+function copyPhonesForWa() {
+  const clients = getUniqueClients();
+  const phones = clients.map(c => c.phone).filter(Boolean);
+  if (!phones.length) return toast('Нет номеров для копирования');
+  const text = phones.join('\n');
+  navigator.clipboard.writeText(text);
+  toast(`📋 Скопировано ${phones.length} номеров для WhatsApp!`);
+}
+
+if ($('#admExportCsvBtn')) $('#admExportCsvBtn').onclick = exportClientsToCsv;
+if ($('#admCopyPhonesBtn')) $('#admCopyPhonesBtn').onclick = copyPhonesForWa;
+
+// Живая синхронизация между окнами / вкладками
+window.addEventListener('storage', e => {
+  if (e.key === 'kz_products') {
+    PRODUCTS = loadProducts();
+    renderAdminAll();
+  }
+  if (e.key === 'kz_orders') {
+    ORDERS = JSON.parse(localStorage.getItem('kz_orders') || 'null') || DEFAULT_ORDERS;
+    renderAdminAll();
+  }
+});
+
+function renderAdminAll() {
+  renderAdminStats();
+  renderAdminCatalog();
+  renderAdminOrders();
+  renderAdminAnalytics();
+  fillAdminSettings();
+  renderNewPhotosGallery();
+}
+renderAdminAll();
+</script>
+</body>
+</html>

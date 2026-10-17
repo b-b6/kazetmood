@@ -1,2 +1,0 @@
-# kazetmood
-KAZETMOOD Official Store
