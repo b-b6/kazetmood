@@ -962,7 +962,7 @@ footer{background:var(--ink);color:#fff;padding:90px 4vw 30px}
         <div><small>Режим работы</small><span id="hours">Каждый день · 10:00 — 20:00</span></div>
         <span class="open open-live" id="openState"><span class="pulse-dot green"></span>Открыто</span>
       </div>
-      <a class="info taxi-card" id="taxiLink" href="https://3.redirect.app.link/yandexgo?text=%D0%A8%D0%B0%D0%B1%D0%B4%D0%B0%D0%BB%D1%8B%20%D0%B1%D0%B0%D0%B7%D0%B0%D1%80%2C%20%D0%9C%D0%B0%D0%BD%D0%B0%D1%81" target="_blank" rel="noopener">
+      <a class="info taxi-card" id="taxiLink" href="https://3.redirect.appmetrica.yandex.com/route?end-lat=40.927067&amp;end-lon=72.998627&amp;appmetrica_tracking_id=1178268795219780156&amp;ref=kazetmood" target="_blank" rel="noopener">
         <span class="ic" style="background:#fc0;color:#000;font-size:18px;box-shadow:0 4px 12px rgba(255,204,0,.35)">🚕</span>
         <div><small>Приехать на примерку в Манасе</small><span style="font-weight:600">Вызвать Яндекс Такси до бутика</span></div>
         <span class="taxi-pill">Поехать ↗</span>
@@ -2547,9 +2547,10 @@ function applyConfigToSite() {
   $('#hours').textContent = `Каждый день · ${CONFIG.openHour}:00 — ${CONFIG.closeHour}:00`;
   updateLiveStoreStatus();
 
-  // Яндекс Такси глубокая ссылка (Яндекс Go / mobile web)
-  const taxiTarget = encodeURIComponent(`${CONFIG.address}, ${CONFIG.area}`);
-  const yandexGoLink = `https://3.redirect.app.link/yandexgo?text=${taxiTarget}&fallback=https://taxi.yandex.ru/`;
+  // Яндекс Такси официальная глубокая ссылка (Яндекс Go / AppMetrica) с точными координатами Шабдалы базар
+  const endLat = CONFIG.lat || 40.927067;
+  const endLon = CONFIG.lon || 72.998627;
+  const yandexGoLink = `https://3.redirect.appmetrica.yandex.com/route?end-lat=${endLat}&end-lon=${endLon}&appmetrica_tracking_id=1178268795219780156&ref=kazetmood`;
   if ($('#taxiLink')) $('#taxiLink').href = yandexGoLink;
 
   $('#mapFrame').src = 'https://maps.google.com/maps?q=' + encodeURIComponent(CONFIG.mapQuery) + '&z=16&output=embed';
