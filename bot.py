@@ -6,7 +6,7 @@ import json
 # ВСТАВЬТЕ СЮДА ВАШ ТОКЕН ОТ @BotFather
 TOKEN = "ВАШ_ТОКЕН_БОТА"
 # ВСТАВЬТЕ СЮДА ССЫЛКУ НА ВАШ САЙТ (например, после загрузки на Vercel, Netlify или GitHub Pages)
-WEBAPP_URL = "https://ваш-сайт.com" 
+WEBAPP_URL = "https://b-b6.github.io/kazetmood/"
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 

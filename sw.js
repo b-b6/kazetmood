@@ -1,7 +1,7 @@
-const CACHE_NAME = 'kazetmood-pwa-v6';
+const CACHE_NAME = 'kazetmood-pwa-v7';
 const ASSETS = [
   './index.html',
-  './data.js?v=6',
+  './data.js?v=7',
   './manifest.json'
 ];
 

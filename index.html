@@ -1141,8 +1141,13 @@ footer{background:var(--ink);color:#fff;padding:90px 4vw 30px}
   <button class="fab-main" id="fabMain" aria-label="Быстрая связь" title="Быстрая связь WhatsApp / Instagram">💬</button>
 </div>
 
-<script src="data.js?v=6"></script>
+<script src="data.js?v=7"></script>
 <script>
+const CATALOG_VERSION = 'v7_48items';
+if (localStorage.getItem('kz_catalog_ver') !== CATALOG_VERSION) {
+  localStorage.removeItem('kz_products');
+  localStorage.setItem('kz_catalog_ver', CATALOG_VERSION);
+}
 const DEFAULT_CONFIG = window.DEFAULT_CONFIG || {
   currency: 'сом',
   phone: '+996 700 000 000',
@@ -1170,7 +1175,7 @@ function isRemovedProduct(p) {
 }
 function loadProducts() {
   const saved = JSON.parse(localStorage.getItem('kz_products') || 'null');
-  if (!saved || !Array.isArray(saved) || !saved.length) {
+  if (!saved || !Array.isArray(saved) || saved.length < DEFAULT_PRODUCTS.length) {
     const list = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)).filter(p => !isRemovedProduct(p));
     try { localStorage.setItem('kz_products', JSON.stringify(list)); } catch(e){}
     return list;
@@ -1252,7 +1257,7 @@ function sanitizeProductList(list) {
 (async () => {
   try {
     const idbList = await idbGet('kz_products');
-    if (idbList && Array.isArray(idbList) && idbList.length > 0) {
+    if (idbList && Array.isArray(idbList) && idbList.length >= DEFAULT_PRODUCTS.length) {
       const cleaned = sanitizeProductList(idbList);
       const hadRemoved = cleaned.length !== idbList.length;
       if (hadRemoved) {
@@ -1268,6 +1273,8 @@ function sanitizeProductList(list) {
       } else {
         PRODUCTS = cleaned;
       }
+    } else if (DEFAULT_PRODUCTS.length > 0) {
+      await idbSet('kz_products', PRODUCTS);
     }
   } catch(e){}
 })();
