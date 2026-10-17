@@ -1,7 +1,7 @@
-const CACHE_NAME = 'kazetmood-pwa-v7';
+const CACHE_NAME = 'kazetmood-pwa-v8';
 const ASSETS = [
   './index.html',
-  './data.js?v=7',
+  './data.js?v=8',
   './manifest.json'
 ];
 
@@ -22,6 +22,7 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  if (event.request.url.includes('api.github.com')) return;
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
