@@ -1141,13 +1141,8 @@ footer{background:var(--ink);color:#fff;padding:90px 4vw 30px}
   <button class="fab-main" id="fabMain" aria-label="Быстрая связь" title="Быстрая связь WhatsApp / Instagram">💬</button>
 </div>
 
-<script src="data.js?v=7"></script>
+<script src="data.js?v=8"></script>
 <script>
-const CATALOG_VERSION = 'v7_48items';
-if (localStorage.getItem('kz_catalog_ver') !== CATALOG_VERSION) {
-  localStorage.removeItem('kz_products');
-  localStorage.setItem('kz_catalog_ver', CATALOG_VERSION);
-}
 const DEFAULT_CONFIG = window.DEFAULT_CONFIG || {
   currency: 'сом',
   phone: '+996 700 000 000',
@@ -1173,38 +1168,30 @@ function isRemovedProduct(p) {
   if (typeof p.img === 'string' && p.img.startsWith('assets/look/')) return true;
   return false;
 }
+function normalizeProductItem(item) {
+  if (item.images && Array.isArray(item.images)) {
+    item.images = item.images.filter(src => typeof src === 'string' && !src.startsWith('photo_'));
+  }
+  if (!item.images || !item.images.length) {
+    item.images = (item.img && !item.img.startsWith('photo_')) ? [item.img] : ['assets/products/tt_1.jpg'];
+  }
+  if (!item.img || item.img.startsWith('photo_')) {
+    item.img = item.images[0];
+  }
+  return item;
+}
+function sanitizeProductList(list) {
+  if (!Array.isArray(list)) return [];
+  return list.filter(p => !isRemovedProduct(p)).map(normalizeProductItem);
+}
 function loadProducts() {
   const saved = JSON.parse(localStorage.getItem('kz_products') || 'null');
-  if (!saved || !Array.isArray(saved) || saved.length < DEFAULT_PRODUCTS.length) {
-    const list = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)).filter(p => !isRemovedProduct(p));
-    try { localStorage.setItem('kz_products', JSON.stringify(list)); } catch(e){}
-    return list;
+  if (saved && Array.isArray(saved)) {
+    return sanitizeProductList(saved);
   }
-  const defMap = new Map(DEFAULT_PRODUCTS.map(d => [d.id, d]));
-  const mergedSaved = saved.filter(item => !isRemovedProduct(item)).map(item => {
-    const def = defMap.get(item.id);
-    if (def) {
-      if (!item.videoUrl && def.videoUrl) item.videoUrl = def.videoUrl;
-      if ((!item.images || !item.images.length) && def.images && def.images.length) {
-        item.images = def.images.slice();
-      }
-    }
-    if (item.images && Array.isArray(item.images)) {
-      item.images = item.images.filter(src => typeof src === 'string' && !src.startsWith('photo_'));
-    }
-    if (!item.images || !item.images.length) {
-      item.images = (item.img && !item.img.startsWith('photo_')) ? [item.img] : ['assets/products/tt_1.jpg'];
-    }
-    if (!item.img || item.img.startsWith('photo_')) {
-      item.img = item.images[0];
-    }
-    return item;
-  });
-  const ids = new Set(mergedSaved.map(x => x.id));
-  const missing = DEFAULT_PRODUCTS.filter(x => !ids.has(x.id) && !isRemovedProduct(x));
-  const result = missing.length ? [...mergedSaved, ...missing] : mergedSaved;
-  try { localStorage.setItem('kz_products', JSON.stringify(result)); } catch(e){}
-  return result;
+  const list = sanitizeProductList(JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)));
+  try { localStorage.setItem('kz_products', JSON.stringify(list)); } catch(e){}
+  return list;
 }
 let PRODUCTS = loadProducts();
 
@@ -1248,35 +1235,53 @@ async function idbSet(key, val) {
     } catch(e) { resolve(false); }
   });
 }
-function sanitizeProductList(list) {
-  if (!Array.isArray(list)) return [];
-  return list.filter(p => !isRemovedProduct(p));
+
+function refreshAllViews() {
+  if (typeof applyConfigToSite === 'function') applyConfigToSite();
+  if (typeof initActiveLookPreset === 'function') initActiveLookPreset();
+  if (typeof renderCollection === 'function') renderCollection();
+  if (typeof renderLookOptions === 'function') renderLookOptions();
+  if (typeof renderStage === 'function') renderStage();
 }
 
-// Загрузка и очистка IndexedDB при старте
+// Загрузка живой облачной базы (единая база для всех пользователей сайта)
+async function fetchLiveCloudCatalog() {
+  try {
+    const res = await fetch('https://api.github.com/repos/b-b6/kazetmood/contents/data.js?ref=main&_t=' + Date.now(), {
+      headers: { 'Accept': 'application/vnd.github.raw+json' },
+      cache: 'no-store'
+    });
+    if (!res.ok) return false;
+    const rawCode = await res.text();
+    const fn = new Function('window', rawCode + '\nreturn { config: window.DEFAULT_CONFIG, products: window.DEFAULT_PRODUCTS };');
+    const cloud = fn({});
+    if (cloud && Array.isArray(cloud.products)) {
+      const cleaned = sanitizeProductList(cloud.products);
+      PRODUCTS = cleaned;
+      try { localStorage.setItem('kz_products', JSON.stringify(cleaned)); } catch(e){}
+      await idbSet('kz_products', cleaned);
+    }
+    if (cloud && cloud.config) {
+      CONFIG = Object.assign({}, DEFAULT_CONFIG, cloud.config);
+      try { localStorage.setItem('kz_config', JSON.stringify(CONFIG)); } catch(e){}
+    }
+    refreshAllViews();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Старт: сначала локальный кэш IndexedDB, затем мгновенная синхронизация с единым облаком
 (async () => {
   try {
     const idbList = await idbGet('kz_products');
-    if (idbList && Array.isArray(idbList) && idbList.length >= DEFAULT_PRODUCTS.length) {
-      const cleaned = sanitizeProductList(idbList);
-      const hadRemoved = cleaned.length !== idbList.length;
-      if (hadRemoved) {
-        await idbSet('kz_products', cleaned);
-        try { localStorage.setItem('kz_products', JSON.stringify(cleaned)); } catch(e){}
-      }
-      if (JSON.stringify(cleaned.map(p => p.id)) !== JSON.stringify(PRODUCTS.map(p => p.id)) || hadRemoved) {
-        PRODUCTS = cleaned;
-        if (typeof initActiveLookPreset === 'function') initActiveLookPreset();
-        if (typeof renderCollection === 'function') renderCollection();
-        if (typeof renderLookOptions === 'function') renderLookOptions();
-        if (typeof renderStage === 'function') renderStage();
-      } else {
-        PRODUCTS = cleaned;
-      }
-    } else if (DEFAULT_PRODUCTS.length > 0) {
-      await idbSet('kz_products', PRODUCTS);
+    if (idbList && Array.isArray(idbList)) {
+      PRODUCTS = sanitizeProductList(idbList);
+      refreshAllViews();
     }
   } catch(e){}
+  await fetchLiveCloudCatalog();
 })();
 
 const kzChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('kazetmood_sync') : null;
@@ -1284,11 +1289,12 @@ if (kzChannel) {
   kzChannel.onmessage = async (e) => {
     if (e.data && e.data.type === 'sync_products') {
       const idbList = await idbGet('kz_products');
-      const cleaned = sanitizeProductList(idbList);
-      PRODUCTS = cleaned.length ? cleaned : loadProducts();
-      if (typeof renderCollection === 'function') renderCollection();
-      if (typeof renderLookOptions === 'function') renderLookOptions();
-      if (typeof renderStage === 'function') renderStage();
+      if (idbList && Array.isArray(idbList)) {
+        PRODUCTS = sanitizeProductList(idbList);
+      } else {
+        PRODUCTS = loadProducts();
+      }
+      refreshAllViews();
     }
   };
 }
@@ -1297,16 +1303,16 @@ if (kzChannel) {
 window.addEventListener('storage', async e => {
   if (e.key === 'kz_products') {
     const idbList = await idbGet('kz_products');
-    const cleaned = sanitizeProductList(idbList);
-    PRODUCTS = cleaned.length ? cleaned : loadProducts();
-    if (typeof renderCollection === 'function') renderCollection();
-    if (typeof renderLookOptions === 'function') renderLookOptions();
-    if (typeof renderStage === 'function') renderStage();
+    if (idbList && Array.isArray(idbList)) {
+      PRODUCTS = sanitizeProductList(idbList);
+    } else {
+      PRODUCTS = loadProducts();
+    }
+    refreshAllViews();
   }
   if (e.key === 'kz_config') {
     CONFIG = Object.assign({}, DEFAULT_CONFIG, JSON.parse(localStorage.getItem('kz_config') || '{}'));
-    if (typeof applyConfigToSite === 'function') applyConfigToSite();
-    if (typeof renderCollection === 'function') renderCollection();
+    refreshAllViews();
   }
 });
 
