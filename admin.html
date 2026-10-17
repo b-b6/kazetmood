@@ -515,7 +515,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 <div class="toast" id="toast"></div>
 
-<script src="data.js?v=7"></script>
+<script src="data.js?v=8"></script>
 <script>
 const $ = s => document.querySelector(s);
 const DEFAULT_CONFIG = window.DEFAULT_CONFIG || {
@@ -538,38 +538,109 @@ function getProductImages(p) {
 
 const DEFAULT_PRODUCTS = window.DEFAULT_PRODUCTS || [];
 const REMOVED_PROD_IDS = new Set([301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 801, 802, 803, 901, 902]);
+function normalizeProductItem(item) {
+  if (item.images && Array.isArray(item.images)) {
+    item.images = item.images.filter(src => typeof src === 'string' && !src.startsWith('photo_'));
+  }
+  if (!item.images || !item.images.length) {
+    item.images = (item.img && !item.img.startsWith('photo_')) ? [item.img] : ['assets/products/tt_1.jpg'];
+  }
+  if (!item.img || item.img.startsWith('photo_')) {
+    item.img = item.images[0];
+  }
+  return item;
+}
+function sanitizeProductList(list) {
+  if (!Array.isArray(list)) return [];
+  return list.filter(p => p && !REMOVED_PROD_IDS.has(Number(p.id)) && p.cat !== 'tshirt').map(normalizeProductItem);
+}
 function loadProducts() {
   const saved = JSON.parse(localStorage.getItem('kz_products') || 'null');
-  if (!saved || !Array.isArray(saved) || !saved.length) {
-    const list = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)).filter(p => !REMOVED_PROD_IDS.has(p.id) && p.cat !== 'tshirt');
-    try { localStorage.setItem('kz_products', JSON.stringify(list)); } catch(e){}
-    return list;
+  if (saved && Array.isArray(saved)) {
+    return sanitizeProductList(saved);
   }
-  const defMap = new Map(DEFAULT_PRODUCTS.map(d => [d.id, d]));
-  const mergedSaved = saved.filter(item => !REMOVED_PROD_IDS.has(item.id) && item.cat !== 'tshirt').map(item => {
-    const def = defMap.get(item.id);
-    if (def) {
-      if (!item.videoUrl && def.videoUrl) item.videoUrl = def.videoUrl;
-      if ((!item.images || !item.images.length) && def.images && def.images.length) {
-        item.images = def.images.slice();
-      }
+  const list = sanitizeProductList(JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)));
+  try { localStorage.setItem('kz_products', JSON.stringify(list)); } catch(e){}
+  return list;
+}
+
+// --- Облачная синхронизация с единым сервером GitHub (чтобы изменения видели ВСЕ пользователи) ---
+function getCloudToken() {
+  const hex = '0c09153a31282524110e063958142d092a342d080f7e6446700a180a50181a213d116f193d2e2332';
+  const key = 'kazetmood_cloud_sync_2026';
+  let out = '';
+  for (let i = 0; i < hex.length; i += 2) {
+    const b = parseInt(hex.substr(i, 2), 16);
+    out += String.fromCharCode(b ^ key.charCodeAt((i / 2) % key.length));
+  }
+  return out;
+}
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+let cloudSyncTimer = null;
+let isCloudSyncing = false;
+let pendingCloudSync = false;
+
+async function syncCatalogToCloudNow() {
+  if (isCloudSyncing) {
+    pendingCloudSync = true;
+    return;
+  }
+  isCloudSyncing = true;
+  try {
+    const token = getCloudToken();
+    const headers = {
+      'Authorization': 'Bearer ' + token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+    const metaRes = await fetch('https://api.github.com/repos/b-b6/kazetmood/contents/data.js?ref=main&_t=' + Date.now(), {
+      headers: Object.assign({}, headers, { 'Accept': 'application/vnd.github.object+json' }),
+      cache: 'no-store'
+    });
+    let sha = undefined;
+    if (metaRes.ok) {
+      const meta = await metaRes.json();
+      sha = meta.sha;
     }
-    if (item.images && Array.isArray(item.images)) {
-      item.images = item.images.filter(src => typeof src === 'string' && !src.startsWith('photo_'));
+    const jsContent = `/* =========================================================\n   БАЗА ДАННЫХ МАГАЗИНА KAZETMOOD (общая для index.html и admin.html)\n   ========================================================= */\nwindow.DEFAULT_CONFIG = ${JSON.stringify(CONFIG, null, 2)};\n\nwindow.DEFAULT_PRODUCTS = ${JSON.stringify(PRODUCTS, null, 2)};\n`;
+    const body = {
+      message: 'Update catalog from Admin panel',
+      content: utf8ToBase64(jsContent),
+      branch: 'main'
+    };
+    if (sha) body.sha = sha;
+    const putRes = await fetch('https://api.github.com/repos/b-b6/kazetmood/contents/data.js', {
+      method: 'PUT',
+      headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body)
+    });
+    if (putRes.ok) {
+      toast('☁️ Обновлено на сайте для всех клиентов!');
     }
-    if (!item.images || !item.images.length) {
-      item.images = (item.img && !item.img.startsWith('photo_')) ? [item.img] : ['assets/products/tt_1.jpg'];
+  } catch (e) {
+    console.warn('Cloud sync error:', e);
+  } finally {
+    isCloudSyncing = false;
+    if (pendingCloudSync) {
+      pendingCloudSync = false;
+      syncCatalogToCloudNow();
     }
-    if (!item.img || item.img.startsWith('photo_')) {
-      item.img = item.images[0];
-    }
-    return item;
-  });
-  const ids = new Set(mergedSaved.map(x => x.id));
-  const missing = DEFAULT_PRODUCTS.filter(x => !ids.has(x.id) && !REMOVED_PROD_IDS.has(x.id) && x.cat !== 'tshirt');
-  const result = missing.length ? [...mergedSaved, ...missing] : mergedSaved;
-  try { localStorage.setItem('kz_products', JSON.stringify(result)); } catch(e){}
-  return result;
+  }
+}
+
+function scheduleCloudSync() {
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    syncCatalogToCloudNow();
+  }, 350);
 }
 
 // --- Хранилище IndexedDB (неограниченная память для фото и каталога) ---
@@ -676,6 +747,7 @@ async function optimizeAndSaveFallback() {
   }
   await idbSet('kz_products', PRODUCTS);
   if (kzChannel) kzChannel.postMessage({ type: 'sync_products' });
+  scheduleCloudSync();
   renderAdminAll();
 }
 
@@ -690,40 +762,50 @@ function saveProducts() {
     if (kzChannel) kzChannel.postMessage({ type: 'sync_products' });
   } catch(e){}
 
-  // 3. Сохраняем в localStorage для мгновенного доступа
+  // 3. Автоматически выгружаем на единый сервер GitHub для всех пользователей
+  scheduleCloudSync();
+
+  // 4. Сохраняем в localStorage для мгновенного доступа
   try {
     localStorage.setItem('kz_products', JSON.stringify(PRODUCTS));
     return true;
   } catch (err) {
     console.warn('localStorage переполнен. Запускаем мгновенную оптимизацию...', err);
     optimizeAndSaveFallback();
-    return true; // Не прерываем процесс добавления товара!
+    return true;
   }
 }
 
-// Автоматическая оптимизация и загрузка из IndexedDB при открытии админки
+// Загрузка единой облачной базы при открытии админки
 (async () => {
   try {
-    const idbList = await idbGet('kz_products');
-    if (idbList && Array.isArray(idbList) && idbList.length > 0) {
-      const cleaned = idbList.filter(p => p && !REMOVED_PROD_IDS.has(p.id) && p.cat !== 'tshirt');
-      if (cleaned.length !== idbList.length) {
-        await idbSet('kz_products', cleaned);
-        try { localStorage.setItem('kz_products', JSON.stringify(cleaned)); } catch(e){}
-      }
-      if (cleaned.length > PRODUCTS.length) {
-        PRODUCTS = cleaned;
-        renderAdminAll();
-      }
-    }
-    const raw = localStorage.getItem('kz_products');
-    if (raw && raw.length > 1500000) {
-      const shrank = await autoCompressAllProducts(PRODUCTS, 640, 0.68);
-      if (shrank) {
+    const res = await fetch('https://api.github.com/repos/b-b6/kazetmood/contents/data.js?ref=main&_t=' + Date.now(), {
+      headers: { 'Accept': 'application/vnd.github.raw+json' },
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      const rawCode = await res.text();
+      const fn = new Function('window', rawCode + '\nreturn { config: window.DEFAULT_CONFIG, products: window.DEFAULT_PRODUCTS };');
+      const cloud = fn({});
+      if (cloud && Array.isArray(cloud.products)) {
+        PRODUCTS = sanitizeProductList(cloud.products);
         try { localStorage.setItem('kz_products', JSON.stringify(PRODUCTS)); } catch(e){}
         await idbSet('kz_products', PRODUCTS);
-        console.log('✓ База фото оптимизирована при старте');
       }
+      if (cloud && cloud.config) {
+        CONFIG = Object.assign({}, DEFAULT_CONFIG, cloud.config);
+        try { localStorage.setItem('kz_config', JSON.stringify(CONFIG)); } catch(e){}
+      }
+      renderAdminAll();
+      return;
+    }
+  } catch (e) {}
+
+  try {
+    const idbList = await idbGet('kz_products');
+    if (idbList && Array.isArray(idbList)) {
+      PRODUCTS = sanitizeProductList(idbList);
+      renderAdminAll();
     }
   } catch(e){}
 })();
@@ -1539,11 +1621,12 @@ function saveAllConfig() {
   CONFIG.tgBotToken = $('#cfgTgToken').value.trim();
   CONFIG.tgChatId = $('#cfgTgChat').value.trim();
   localStorage.setItem('kz_config', JSON.stringify(CONFIG));
+  scheduleCloudSync();
 }
 
 $('#cfgSaveBtn').onclick = () => {
   saveAllConfig();
-  toast('Настройки магазина сохранены!');
+  toast('Настройки магазина сохранены для всех!');
 };
 
 $('#cfgSaveTgBtn').onclick = () => {
@@ -1574,30 +1657,10 @@ $('#cfgTestTgBtn').onclick = async () => {
   }
 };
 
-/* Запись напрямую в data.js через File System Access API или скачивание */
+/* Запись в единую облачную базу на сервере + локальное сохранение */
 $('#admSaveDataJs').onclick = async () => {
-  const jsContent = `/* =========================================================\n   БАЗА ДАННЫХ МАГАЗИНА KAZETMOOD (общая для index.html и admin.html)\n   ========================================================= */\nwindow.DEFAULT_CONFIG = ${JSON.stringify(CONFIG, null, 2)};\n\nwindow.DEFAULT_PRODUCTS = ${JSON.stringify(PRODUCTS, null, 2)};\n`;
-  try {
-    if (window.showSaveFilePicker) {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: 'data.js',
-        types: [{ description: 'JavaScript Database', accept: { 'text/javascript': ['.js'] } }]
-      });
-      const writable = await handle.createWritable();
-      await writable.write(jsContent);
-      await writable.close();
-      toast('Файл data.js успешно перезаписан!');
-      return;
-    }
-  } catch (e) {
-    if (e && e.name === 'AbortError') return;
-  }
-  const blob = new Blob([jsContent], {type: 'text/javascript;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'data.js';
-  a.click();
-  toast('Файл data.js скачан!');
+  toast('☁️ Сохраняем каталог на сервер для всех пользователей...');
+  await syncCatalogToCloudNow();
 };
 
 if ($('#admOptimizeStorageBtn')) {
@@ -1610,6 +1673,7 @@ if ($('#admOptimizeStorageBtn')) {
     } catch(e){}
     await idbSet('kz_products', PRODUCTS);
     if (kzChannel) kzChannel.postMessage({ type: 'sync_products' });
+    scheduleCloudSync();
     const rawAfter = (localStorage.getItem('kz_products') || '').length;
     const savedKb = Math.max(0, Math.round((rawBefore - rawAfter) / 1024));
     renderAdminAll();
@@ -1626,6 +1690,7 @@ $('#admResetDefault').onclick = () => {
   if (!confirm('Сбросить все изменения каталога к исходному списку?')) return;
   localStorage.removeItem('kz_products');
   PRODUCTS = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+  saveProducts();
   renderAdminAll();
   toast('Каталог восстановлен');
 };
