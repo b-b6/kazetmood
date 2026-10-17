@@ -472,8 +472,9 @@ body.dark-mode .qv-sizes button.on{background:var(--amber);border-color:var(--am
 .tag-remove:hover{color:#ef4444;background:rgba(239,68,68,.15)}
 
 /* Кнопки примерки на 3D манекене в каталоге */
-.card-try-look{font:700 10.5px/1 Inter;padding:7px 11px;border-radius:8px;background:linear-gradient(135deg,#f5c27a,#c98a3b);color:#0c0d0b;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s;box-shadow:0 3px 10px rgba(201,138,59,.35)}
+.card-try-look{font:700 10.5px/1 Inter;padding:6px 11px;border-radius:8px;background:linear-gradient(135deg,#f5c27a,#c98a3b);color:#0c0d0b;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s;box-shadow:0 3px 10px rgba(201,138,59,.35)}
 .card-try-look:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(201,138,59,.55)}
+.try-look-ico{width:18px;height:18px;object-fit:contain;display:block;flex-shrink:0}
 .card-actions-top .card-try-look-icon{width:30px;height:30px;border-radius:50%;background:rgba(20,23,18,.85);backdrop-filter:blur(6px);border:1px solid rgba(245,194,122,.4);display:flex;align-items:center;justify-content:center;font-size:13px;color:#f5c27a;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .card-actions-top .card-try-look-icon:hover{transform:scale(1.1);background:#f5c27a;color:#0c0d0b;border-color:#f5c27a}
 .qv-btn-try-look{width:100%;padding:13px;border-radius:10px;font:700 12.5px/1 Inter;justify-content:center;background:linear-gradient(135deg,#f5c27a,#c98a3b);color:#0c0d0b;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(201,138,59,.35);transition:all .2s}
@@ -1063,7 +1064,7 @@ footer{background:var(--ink);color:#fff;padding:90px 4vw 30px}
         <div class="qv-sizes" id="qvSizes"></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:7px">
-        <button class="qv-btn-try-look" id="qvTryLookBtn">👔 Добавить этот товар в 3D образ ↗</button>
+        <button class="qv-btn-try-look" id="qvTryLookBtn"><img src="assets/cowboy-look.gif" alt="" class="try-look-ico" style="width:20px;height:20px"> Добавить этот товар в 3D образ ↗</button>
         <a id="qvVideoBtn" href="#" target="_blank" class="qv-btn-vid" style="display:none">▶ Смотреть видео-обзор вещи в соцсети ↗</a>
         <button class="btn-solid" id="qvAddBtn" style="width:100%;padding:14px;border-radius:10px;font:600 13px/1 Inter;justify-content:center;background:var(--ink);color:#fff">Добавить в корзину +</button>
         <button class="qv-btn-wa" id="qvWaBtn">💬 Спросить наличие / замер в WhatsApp ↗</button>
@@ -1444,7 +1445,7 @@ function renderCollection(f=currentCatFilter){
         <div class="card-foot">
           <span class="card-price">${fmt(p.price)}</span>
           <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-            <button class="card-try-look" data-try-look="${p.id}" title="Добавить вещь в интерактивный 3D образ">👔 В образ</button>
+            <button class="card-try-look" data-try-look="${p.id}" title="Добавить вещь в интерактивный 3D образ"><img src="assets/cowboy-look.gif" alt="" class="try-look-ico"> В образ</button>
             <button class="card-add-btn" data-qv="${p.id}"><img src="assets/cart-add.png" alt="" class="cart-add-ico"> В корзину</button>
           </div>
         </div>
