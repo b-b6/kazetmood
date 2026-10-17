@@ -217,8 +217,10 @@ section{position:relative}
 .card p{font:400 11px/1.35 Inter;color:var(--muted);margin:0 0 8px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .card-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:8px;border-top:1px solid #0c0d0b0d;flex-wrap:wrap}
 .card-price{font:700 16px/1 Inter;color:var(--ink);letter-spacing:-.02em}
-.card-add-btn{padding:7px 11px;border-radius:8px;background:#0c0d0b0d;color:var(--ink);font:600 11px/1 Inter;transition:.2s;display:inline-flex;align-items:center;gap:4px}
+.card-add-btn{padding:7px 11px;border-radius:8px;background:#0c0d0b0d;color:var(--ink);font:600 11px/1 Inter;transition:.2s;display:inline-flex;align-items:center;gap:5px}
 .card-add-btn:hover{background:var(--ink);color:#fff}
+.cart-add-ico{width:14px;height:14px;object-fit:contain;display:block;flex-shrink:0;transition:filter .2s}
+.card-add-btn:hover .cart-add-ico,#collection.col-dark .card-add-btn .cart-add-ico{filter:brightness(0) invert(1)}
 
 /* Кнопка «Показать ещё» для сетки */
 .col-more-wrap{text-align:center;margin-top:36px;padding:0 4vw}
@@ -1443,7 +1445,7 @@ function renderCollection(f=currentCatFilter){
           <span class="card-price">${fmt(p.price)}</span>
           <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
             <button class="card-try-look" data-try-look="${p.id}" title="Добавить вещь в интерактивный 3D образ">👔 В образ</button>
-            <button class="card-add-btn" data-qv="${p.id}">+ В корзину</button>
+            <button class="card-add-btn" data-qv="${p.id}"><img src="assets/cart-add.png" alt="" class="cart-add-ico"> В корзину</button>
           </div>
         </div>
       </div>
