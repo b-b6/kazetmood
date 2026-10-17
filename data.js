@@ -3,7 +3,7 @@
    ========================================================= */
 window.DEFAULT_CONFIG = {
   "currency": "сом",
-  "phone": "+996 700 000 000",
+  "phone": "+996 550111459",
   "address": "Шабдалы базар",
   "area": "Манас",
   "mapQuery": "Шабдалы базар, Манас, Кыргызстан",
@@ -11,7 +11,7 @@ window.DEFAULT_CONFIG = {
   "closeHour": 18,
   "tgBotToken": "",
   "tgChatId": "",
-  "liveToast": true
+  "liveToast": false
 };
 
 window.DEFAULT_PRODUCTS = [
