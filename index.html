@@ -242,55 +242,7 @@ section{position:relative}
 .qv-box{background:var(--cream);color:var(--ink);max-width:880px;width:100%;border-radius:22px;overflow:hidden;display:grid;grid-template-columns:1.08fr 1fr;box-shadow:0 28px 70px #00000080;position:relative}
 .qv-media-col{display:flex;flex-direction:column;background:#131411;position:relative;min-height:0}
 .qv-img{aspect-ratio:3/4;background:#1e1d1b;overflow:hidden;position:relative;cursor:default;user-select:none;-webkit-user-select:none}
-.qv-img.zoom-enabled{cursor:crosshair}
-.qv-img img{width:100%;height:100%;object-fit:cover;object-position:center top;transition:transform .2s cubic-bezier(.2,.8,.2,1);transform-origin:center center;will-change:transform}
-.qv-img.zoom-enabled.zooming img{transform:scale(2.5)}
-
-.qv-zoom-btn{
-  position:absolute;
-  bottom:12px;
-  left:12px;
-  background:rgba(12,13,11,.86);
-  color:#f5f4ef;
-  font:600 11px/1 Inter;
-  padding:8px 14px;
-  border-radius:99px;
-  border:1px solid rgba(245,194,122,.35);
-  box-shadow:0 4px 16px rgba(0,0,0,.35);
-  backdrop-filter:blur(8px);
-  cursor:pointer;
-  z-index:4;
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  transition:all .22s ease;
-  user-select:none;
-}
-.qv-zoom-btn:hover{
-  background:#0c0d0b;
-  border-color:#f5c27a;
-  color:#f5c27a;
-  transform:scale(1.04);
-}
-.qv-zoom-btn.active{
-  background:#f5c27a;
-  color:#0c0d0b;
-  border-color:#c98a3b;
-  box-shadow:0 0 18px rgba(245,194,122,.7);
-  font-weight:700;
-}
-.qv-zoom-btn .zoom-hint-dot{
-  width:6px;
-  height:6px;
-  border-radius:50%;
-  background:#f5c27a;
-  display:inline-block;
-  transition:background .2s;
-}
-.qv-zoom-btn.active .zoom-hint-dot{
-  background:#0c0d0b;
-  animation:pulseDot 1.2s infinite;
-}
+.qv-img img{width:100%;height:100%;object-fit:cover;object-position:center top}
 
 /* Стрелки и счётчик в модалке */
 .qv-arrow{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:rgba(12,13,11,.75);color:#fff;backdrop-filter:blur(8px);display:grid;place-items:center;font-size:22px;font-weight:700;z-index:4;cursor:pointer;border:1px solid rgba(255,255,255,.2);transition:all .2s}
@@ -1041,10 +993,6 @@ footer{background:var(--ink);color:#fff;padding:90px 4vw 30px}
     <div class="qv-media-col">
       <div class="qv-img" id="qvImgWrap">
         <img id="qvImg" src="" alt="">
-        <button type="button" class="qv-zoom-btn" id="qvZoomToggle" title="Включить макро-лупу (приближение ткани)">
-          <span class="zoom-hint-dot"></span>
-          <span class="txt">🔍 Лупа ткани</span>
-        </button>
         <button class="qv-arrow prev" id="qvPrevBtn" aria-label="Предыдущее фото" title="Предыдущее фото">‹</button>
         <button class="qv-arrow next" id="qvNextBtn" aria-label="Следующее фото" title="Следующее фото">›</button>
         <span class="qv-counter" id="qvPhotoCounter">1 / 1</span>
@@ -1490,31 +1438,7 @@ const qvImgWrap = $('#qvImgWrap');
 const qvImgEl = $('#qvImg');
 const qvZoomToggle = $('#qvZoomToggle');
 
-function setQvZoom(active) {
-  isQvZoomActive = !!active;
-  if (qvZoomToggle) {
-    qvZoomToggle.classList.toggle('active', isQvZoomActive);
-    const txt = qvZoomToggle.querySelector('.txt');
-    if (txt) {
-      txt.textContent = isQvZoomActive ? '✕ Выключить лупу' : '🔍 Лупа ткани';
-    }
-    qvZoomToggle.title = isQvZoomActive ? 'Нажмите, чтобы отключить режим лупы' : 'Нажмите, чтобы включить макро-лупу ткани';
-  }
-  if (qvImgWrap) {
-    qvImgWrap.classList.toggle('zoom-enabled', isQvZoomActive);
-    if (!isQvZoomActive) {
-      qvImgWrap.classList.remove('zooming');
-      if (qvImgEl) qvImgEl.style.transformOrigin = 'center center';
-    }
-  }
-}
-
-if (qvZoomToggle) {
-  qvZoomToggle.onclick = e => {
-    e.stopPropagation();
-    setQvZoom(!isQvZoomActive);
-  };
-}
+function setQvZoom() {}
 
 function setQvImage(idx) {
   if (!currentQvImages.length) return;
@@ -1625,53 +1549,7 @@ window.addEventListener('keydown', e => {
   }
 });
 
-// Клик по фото: при включённой лупе выключает, при выключенной — включает в точке клика
-if (qvImgWrap) {
-  qvImgWrap.addEventListener('click', e => {
-    if (e.target.closest('#qvZoomToggle') || e.target.closest('.qv-arrow')) return;
-    if (!isQvZoomActive) {
-      setQvZoom(true);
-      const rect = qvImgWrap.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      qvImgWrap.classList.add('zooming');
-      if (qvImgEl) qvImgEl.style.transformOrigin = `${x}% ${y}%`;
-    } else {
-      setQvZoom(false);
-    }
-  });
-}
 
-// Макро-лупа текстуры ткани (#13) — работает ТОЛЬКО когда лупа активна!
-if (qvImgWrap && qvImgEl) {
-  qvImgWrap.addEventListener('mousemove', e => {
-    if (!isQvZoomActive) return; // Без нажатия кнопки лупы курсор просто двигается, ничего не увеличивает
-    const rect = qvImgWrap.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    qvImgWrap.classList.add('zooming');
-    qvImgEl.style.transformOrigin = `${x}% ${y}%`;
-  });
-  qvImgWrap.addEventListener('mouseleave', () => {
-    if (isQvZoomActive) {
-      qvImgWrap.classList.remove('zooming');
-      qvImgEl.style.transformOrigin = 'center center';
-    }
-  });
-  qvImgWrap.addEventListener('touchmove', e => {
-    if (!isQvZoomActive) return; // Когда лупа выключена, жесты не блокируются (свайп работает свободно)
-    const touch = e.touches[0];
-    if (!touch) return;
-    const rect = qvImgWrap.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, ((touch.clientY - rect.top) / rect.height) * 100));
-    qvImgWrap.classList.add('zooming');
-    qvImgEl.style.transformOrigin = `${x}% ${y}%`;
-  }, {passive:true});
-  qvImgWrap.addEventListener('touchend', () => {
-    if (isQvZoomActive) qvImgWrap.classList.remove('zooming');
-  });
-}
 
 $('#qvSizes').addEventListener('click', e => {
   const btn = e.target.closest('[data-qvs]');
@@ -2259,7 +2137,6 @@ function renderLive3DBoard() {
     return `
       <div class="live-3d-card slot-${s.key}" onclick="switchLookSlot('${s.key}')">
         <img src="${item.photo}" alt="${item.name}">
-        <span class="l3d-zoom" onclick="event.stopPropagation(); openQuickView(${item.productId})" title="Увеличить фото и рассмотреть ткань">🔍 Лупа</span>
         <button type="button" class="l3d-del" onclick="event.stopPropagation(); removeLookItem('${s.key}')" title="Снять вещь">✕</button>
         <div class="l3d-ov">
           <span class="l3d-slot">${s.label} ${sz ? '· Разм. ' + sz : ''}</span>
